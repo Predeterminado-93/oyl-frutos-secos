@@ -1,47 +1,27 @@
-package com.oyl.frutossecos
+﻿package com.OYL.frutossecos
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.oyl.frutossecos.ui.theme.AppOylFrutosSecosTheme
+import androidx.navigation.compose.rememberNavController
+import com.OYL.frutossecos.ui.navigation.AppNavGraph
+import com.OYL.frutossecos.ui.theme.FrutosSecosTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            AppOylFrutosSecosTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Duro Cabrón!",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+            FrutosSecosTheme {
+                Surface(modifier = Modifier.fillMaxSize()) {
+                    val navController = rememberNavController()
+                    AppNavGraph(navController = navController)
                 }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello maldito $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    AppOylFrutosSecosTheme {
-        Greeting("Android")
     }
 }

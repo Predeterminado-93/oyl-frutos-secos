@@ -22,6 +22,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "AppOylFrutosSecos"
+rootProject.name = "FrutosSecos"
 include(":app")
- 

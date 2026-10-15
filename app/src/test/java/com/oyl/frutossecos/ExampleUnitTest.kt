@@ -1,4 +1,4 @@
-package com.oyl.frutossecos
+package com.OYL.frutossecos
 
 import org.junit.Test
 
