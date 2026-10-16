@@ -13,16 +13,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.navArgument
-import com.OYL.frutossecos.ui.screens.splash.SplashScreen
 import com.OYL.frutossecos.ui.screens.login.LoginScreen
+import com.OYL.frutossecos.ui.screens.main.MainContainerScreen
+import com.OYL.frutossecos.ui.screens.mapa.MapaScreen
+import com.OYL.frutossecos.ui.screens.registro.RegistroScreen
+import com.OYL.frutossecos.ui.screens.splash.SplashScreen
 
 /**
- * Grafo de navegación principal de la aplicación.
- * Cada pantalla se agrega aquí a medida que se implementa.
+ * Grafo de navegación principal de la aplicación OYL Frutos Secos.
+ * Conecta Splash, Login, Registro y el Contenedor Principal (Dashboard + Mapa con barra inferior).
  */
 @Composable
 fun AppNavGraph(navController: NavHostController) {
@@ -34,9 +35,7 @@ fun AppNavGraph(navController: NavHostController) {
         composable(NavRoutes.Splash.route) {
             SplashScreen(
                 onComenzar = {
-                    navController.navigate(NavRoutes.Login.route) {
-                        popUpTo(NavRoutes.Splash.route) { inclusive = true }
-                    }
+                    navController.navigate(NavRoutes.Registro.route)
                 },
                 onYaTengoCuenta = {
                     navController.navigate(NavRoutes.Login.route) {
@@ -44,7 +43,7 @@ fun AppNavGraph(navController: NavHostController) {
                     }
                 },
                 onVerCatalogo = {
-                    navController.navigate(NavRoutes.Catalogo.route)
+                    navController.navigate(NavRoutes.Dashboard.route)
                 },
                 onVerMapa = {
                     navController.navigate(NavRoutes.Mapa.route)
@@ -55,15 +54,10 @@ fun AppNavGraph(navController: NavHostController) {
         // ── Pantalla 2: Login ──────────────────────────────────────────────
         composable(NavRoutes.Login.route) {
             LoginScreen(
-                onLoginExitoso = { rol ->
-                    if (rol == "ADMIN") {
-                        navController.navigate(NavRoutes.AdminPanel.route) {
-                            popUpTo(NavRoutes.Login.route) { inclusive = true }
-                        }
-                    } else {
-                        navController.navigate(NavRoutes.Catalogo.route) {
-                            popUpTo(NavRoutes.Login.route) { inclusive = true }
-                        }
+                onLoginExitoso = { _ ->
+                    // Redirige al Dashboard / Contenedor principal con la barra inferior
+                    navController.navigate(NavRoutes.Dashboard.route) {
+                        popUpTo(NavRoutes.Login.route) { inclusive = true }
                     }
                 },
                 onRegistrarse = {
@@ -75,15 +69,47 @@ fun AppNavGraph(navController: NavHostController) {
             )
         }
 
-        // ── Pantallas en desarrollo (placeholders para prevenir crash de navegación) ──
+        // ── Pantalla 3: Registro de Cliente ────────────────────────────────
+        composable(NavRoutes.Registro.route) {
+            RegistroScreen(
+                onRegistroExitoso = { _ ->
+                    // Redirige al Dashboard / Contenedor principal con la barra inferior
+                    navController.navigate(NavRoutes.Dashboard.route) {
+                        popUpTo(NavRoutes.Login.route) { inclusive = true }
+                    }
+                },
+                onIrALogin = {
+                    navController.navigate(NavRoutes.Login.route) {
+                        popUpTo(NavRoutes.Registro.route) { inclusive = true }
+                    }
+                },
+                onVolver = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        // ── Pantalla 4: Contenedor Principal (Dashboard + Menú Inferior) ───
+        composable(NavRoutes.Dashboard.route) {
+            MainContainerScreen(
+                onCerrarSesion = {
+                    navController.navigate(NavRoutes.Login.route) {
+                        popUpTo(NavRoutes.Dashboard.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // ── Pantalla 5: Mapa de Tiendas y Puntos de Retiro ─────────────────
+        composable(NavRoutes.Mapa.route) {
+            MapaScreen(
+                onVolver = { navController.popBackStack() }
+            )
+        }
+
+        // ── Rutas secundarias de respaldo ──────────────────────────────────
         composable(NavRoutes.Catalogo.route) {
             PantallaEnConstruccion(titulo = "Catálogo de Productos", onVolver = { navController.popBackStack() })
-        }
-        composable(NavRoutes.Mapa.route) {
-            PantallaEnConstruccion(titulo = "Ubicación y Mapa", onVolver = { navController.popBackStack() })
-        }
-        composable(NavRoutes.Registro.route) {
-            PantallaEnConstruccion(titulo = "Registro de Usuario", onVolver = { navController.popBackStack() })
         }
         composable(NavRoutes.AdminPanel.route) {
             PantallaEnConstruccion(titulo = "Panel de Administración", onVolver = { navController.popBackStack() })

@@ -1,13 +1,17 @@
-﻿package com.OYL.frutossecos.data.local.db
+package com.OYL.frutossecos.data.local.db
 
 import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.OYL.frutossecos.data.local.dao.PedidoDao
 import com.OYL.frutossecos.data.local.dao.ProductoDao
+import com.OYL.frutossecos.data.local.dao.PuntoRetiroDao
 import com.OYL.frutossecos.data.local.dao.UsuarioDao
+import com.OYL.frutossecos.data.local.entities.PedidoEntity
 import com.OYL.frutossecos.data.local.entities.ProductoEntity
+import com.OYL.frutossecos.data.local.entities.PuntoRetiroEntity
 import com.OYL.frutossecos.data.local.entities.UsuarioEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -15,17 +19,24 @@ import kotlinx.coroutines.launch
 
 /**
  * Base de datos Room principal de OYL Frutos Secos.
- * Versión 1: tablas usuarios y productos.
+ * Versión 3: soporte para usuarios, productos, puntos de retiro y pedidos.
  */
 @Database(
-    entities = [UsuarioEntity::class, ProductoEntity::class],
-    version = 1,
+    entities = [
+        UsuarioEntity::class,
+        ProductoEntity::class,
+        PuntoRetiroEntity::class,
+        PedidoEntity::class
+    ],
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun usuarioDao(): UsuarioDao
     abstract fun productoDao(): ProductoDao
+    abstract fun puntoRetiroDao(): PuntoRetiroDao
+    abstract fun pedidoDao(): PedidoDao
 
     companion object {
         @Volatile
@@ -38,6 +49,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "oyl_frutos_secos.db"
                 )
+                    .fallbackToDestructiveMigration(dropAllTables = true)
                     .addCallback(SeedCallback())
                     .build()
                 INSTANCE = instance
@@ -47,7 +59,7 @@ abstract class AppDatabase : RoomDatabase() {
     }
 
     /**
-     * Callback que inserta datos de demostración la primera vez que se crea la BD.
+     * Callback que inserta datos de demostración al crear o abrir la BD.
      */
     private class SeedCallback : Callback() {
         override fun onCreate(db: SupportSQLiteDatabase) {
@@ -59,25 +71,70 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        override fun onOpen(db: SupportSQLiteDatabase) {
+            super.onOpen(db)
+            INSTANCE?.let { database ->
+                CoroutineScope(Dispatchers.IO).launch {
+                    ensureInitialData(database)
+                }
+            }
+        }
+
+        private suspend fun ensureInitialData(db: AppDatabase) {
+            // Garantizar que exista el Administrador
+            val adminExistente = db.usuarioDao().obtenerPorAlias("admin")
+            if (adminExistente == null) {
+                db.usuarioDao().insertar(
+                    UsuarioEntity(
+                        nombre = "Administrador",
+                        alias = "admin",
+                        email = "admin@admin.cl",
+                        password = "admin123",
+                        telefono = "+56 9 1234 1234",
+                        direccion = "Santiago",
+                        rol = "ADMIN"
+                    )
+                )
+            }
+
+            // Garantizar puntos de retiro si la tabla está vacía
+            if (db.puntoRetiroDao().contar() == 0) {
+                seedPuntosRetiro(db)
+            }
+
+            // Garantizar pedidos si la tabla está vacía
+            if (db.pedidoDao().contar() == 0) {
+                seedPedidos(db)
+            }
+        }
+
         private suspend fun seedDatabase(db: AppDatabase) {
-            // Usuario Administrador de demo
+            // Usuario Administrador de demostración preconfigurado en duro
             db.usuarioDao().insertar(
                 UsuarioEntity(
-                    nombre = "Admin OYL",
-                    email = "admin@oyl.com",
+                    nombre = "Administrador",
+                    alias = "admin",
+                    email = "admin@admin.cl",
                     password = "admin123",
+                    telefono = "+56 9 1234 1234",
+                    direccion = "Santiago",
                     rol = "ADMIN"
                 )
             )
-            // Usuario Cliente de demo
-            db.usuarioDao().insertar(
+
+            // Usuario Cliente de demostración inicial
+            val clienteId = db.usuarioDao().insertar(
                 UsuarioEntity(
                     nombre = "Cliente Demo",
-                    email = "cliente@demo.com",
+                    alias = "cliente",
+                    email = "cliente@demo.cl",
                     password = "cliente123",
+                    telefono = "+56 9 9876 5432",
+                    direccion = "Providencia, Santiago",
                     rol = "CLIENTE"
                 )
-            )
+            ).toInt()
+
             // Productos de demo
             val productos = listOf(
                 ProductoEntity(
@@ -106,10 +163,10 @@ abstract class AppDatabase : RoomDatabase() {
                 ),
                 ProductoEntity(
                     nombre = "Mango deshidratado",
-                    descripcion = "Trozos de mango deshidratado sin azúcar añadida.",
+                    descripcion = "Trozos de mango deshidratado sin azúcar añadida. ¡Stock bajo!",
                     fotoUrl = "https://images.unsplash.com/photo-1609480748849-79e5d0dc0ed6?w=400",
                     precio = 1100.0,
-                    stock = 4,
+                    stock = 3,
                     categoria = "Deshidratados"
                 ),
                 ProductoEntity(
@@ -117,7 +174,7 @@ abstract class AppDatabase : RoomDatabase() {
                     descripcion = "Pistachos tostados con sal marina, crujientes y sabrosos.",
                     fotoUrl = "https://images.unsplash.com/photo-1626200924688-e6b3ec6d8a3c?w=400",
                     precio = 2200.0,
-                    stock = 20,
+                    stock = 4,
                     categoria = "Frutos secos"
                 ),
                 ProductoEntity(
@@ -130,6 +187,105 @@ abstract class AppDatabase : RoomDatabase() {
                 )
             )
             db.productoDao().insertarTodos(productos)
+
+            seedPuntosRetiro(db)
+            seedPedidos(db, clienteId)
+        }
+
+        private suspend fun seedPuntosRetiro(db: AppDatabase) {
+            val puntos = listOf(
+                PuntoRetiroEntity(
+                    nombre = "Tienda Matriz OYL Frutos Secos",
+                    tipo = "TIENDA_FISICA",
+                    direccion = "Av. Providencia 1234, Local 5",
+                    comuna = "Providencia, Santiago",
+                    latitud = -33.42628,
+                    longitud = -70.61389,
+                    horario = "Lun a Sáb: 09:30 - 20:30 hrs",
+                    telefono = "+56 9 1234 1234",
+                    indicaciones = "Frente a salida de Metro Manuel Montt. Estacionamiento disponible.",
+                    esTiendaPrincipal = true
+                ),
+                PuntoRetiroEntity(
+                    nombre = "Punto Retiro Metro Los Leones",
+                    tipo = "PUNTO_RETIRO",
+                    direccion = "Av. Nueva Providencia 2155, Nivel -1",
+                    comuna = "Providencia, Santiago",
+                    latitud = -33.42194,
+                    longitud = -70.60833,
+                    horario = "Lun a Vie: 10:00 - 19:30 hrs",
+                    telefono = "+56 9 9876 5432",
+                    indicaciones = "Galería comercial subterránea, junto al tótem de información.",
+                    esTiendaPrincipal = false
+                ),
+                PuntoRetiroEntity(
+                    nombre = "Punto Retiro Santiago Centro",
+                    tipo = "PUNTO_RETIRO",
+                    direccion = "Paseo Ahumada 312, Stand 8",
+                    comuna = "Santiago Centro",
+                    latitud = -33.44194,
+                    longitud = -70.65139,
+                    horario = "Lun a Sáb: 10:00 - 19:00 hrs",
+                    telefono = "+56 9 5555 4444",
+                    indicaciones = "A media cuadra de Plaza de Armas. Retiro express con código.",
+                    esTiendaPrincipal = false
+                ),
+                PuntoRetiroEntity(
+                    nombre = "Punto Retiro Las Condes",
+                    tipo = "PUNTO_RETIRO",
+                    direccion = "Av. Apoquindo 4400, Local 12",
+                    comuna = "Las Condes",
+                    latitud = -33.41583,
+                    longitud = -70.58750,
+                    horario = "Lun a Vie: 09:00 - 18:30 hrs",
+                    telefono = "+56 9 7777 8888",
+                    indicaciones = "SubCentro Metro Escuela Militar, sector poniente.",
+                    esTiendaPrincipal = false
+                )
+            )
+            db.puntoRetiroDao().insertarTodos(puntos)
+        }
+
+        private suspend fun seedPedidos(db: AppDatabase, clienteId: Int = 2) {
+            val pedidos = listOf(
+                PedidoEntity(
+                    usuarioId = clienteId,
+                    usuarioAlias = "cliente",
+                    fecha = System.currentTimeMillis() - 3600000L * 2,
+                    estado = "EN_PREPARACION",
+                    total = 3000.0,
+                    itemsResumen = "1kg Almendras crudas, 500g Nueces peladas",
+                    puntoRetiroNombre = "Tienda Matriz OYL Frutos Secos"
+                ),
+                PedidoEntity(
+                    usuarioId = clienteId,
+                    usuarioAlias = "cliente",
+                    fecha = System.currentTimeMillis() - 3600000L * 24,
+                    estado = "PENDIENTE",
+                    total = 1850.0,
+                    itemsResumen = "Mix de semillas (500g), Mango deshidratado (200g)",
+                    puntoRetiroNombre = "Punto Retiro Metro Los Leones"
+                ),
+                PedidoEntity(
+                    usuarioId = 3,
+                    usuarioAlias = "maria_l",
+                    fecha = System.currentTimeMillis() - 3600000L * 5,
+                    estado = "PENDIENTE",
+                    total = 2200.0,
+                    itemsResumen = "Pistachos tostados (500g)",
+                    puntoRetiroNombre = "Punto Retiro Santiago Centro"
+                ),
+                PedidoEntity(
+                    usuarioId = clienteId,
+                    usuarioAlias = "cliente",
+                    fecha = System.currentTimeMillis() - 3600000L * 72,
+                    estado = "ENTREGADO",
+                    total = 2700.0,
+                    itemsResumen = "Semillas de chía (1kg), Almendras crudas (500g)",
+                    puntoRetiroNombre = "Tienda Matriz OYL Frutos Secos"
+                )
+            )
+            db.pedidoDao().insertarTodos(pedidos)
         }
     }
 }
