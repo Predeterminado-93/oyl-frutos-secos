@@ -104,7 +104,10 @@ fun AppNavGraph(navController: NavHostController) {
                     navController.navigate(NavRoutes.Login.route) {
                         popUpTo(NavRoutes.Dashboard.route) { inclusive = true }
                     }
-                }
+                },
+                onIrACatalogo = { navController.navigate(NavRoutes.Catalogo.route) },
+                onIrACarrito = { navController.navigate(NavRoutes.Carrito.route) },
+                onIrAEscaner = { navController.navigate(NavRoutes.EscanearQR.route) }
             )
         }
 

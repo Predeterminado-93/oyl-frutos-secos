@@ -18,16 +18,21 @@ import kotlinx.coroutines.launch
 /**
  * Contenedor principal con Barra de Navegación Inferior (Bottom Navigation Bar).
  *
- * Muestra el menú inferior solicitado:
- *   1. Inicio (Dashboard según rol con la imagen de frutos secos arriba)
+ *   1. Inicio (Dashboard según rol)
  *   2. Mapa (Mapa de Tiendas y Puntos de Retiro)
- *   3. Escanear (en la barra, reservado para desarrollo)
- *   4. Pedidos (en la barra, reservado para desarrollo)
- *   5. Perfil (en la barra, reservado para desarrollo)
+ *   3. Escanear -> abre la pantalla del Escáner QR (pantalla 8)
+ *   4. Pedidos (reservado para desarrollo)
+ *   5. Perfil (reservado para desarrollo)
+ *
+ * Los callbacks onIrA... los resuelve el AppNavGraph, porque Catálogo, Carrito y Escáner
+ * son pantallas completas fuera de este contenedor.
  */
 @Composable
 fun MainContainerScreen(
-    onCerrarSesion: () -> Unit
+    onCerrarSesion: () -> Unit,
+    onIrACatalogo: () -> Unit = {},
+    onIrACarrito: () -> Unit = {},
+    onIrAEscaner: () -> Unit = {}
 ) {
     var pestañaSeleccionada by remember { mutableIntStateOf(0) } // 0: Inicio, 1: Mapa
     val snackbarHostState = remember { SnackbarHostState() }
@@ -90,14 +95,10 @@ fun MainContainerScreen(
                     )
                 )
 
-                // 3. Escanear
+                // 3. Escanear  (ahora abre la pantalla del Escáner QR)
                 NavigationBarItem(
                     selected = false,
-                    onClick = {
-                        scope.launch {
-                            snackbarHostState.showSnackbar("Escáner QR: Pantalla en preparación para la siguiente fase.")
-                        }
-                    },
+                    onClick = onIrAEscaner,
                     icon = {
                         Icon(
                             imageVector = Icons.Default.QrCodeScanner,
@@ -165,7 +166,9 @@ fun MainContainerScreen(
                 0 -> {
                     DashboardScreen(
                         onNavegarAMapa = { pestañaSeleccionada = 1 },
-                        onCerrarSesion = onCerrarSesion
+                        onCerrarSesion = onCerrarSesion,
+                        onIrACatalogo = onIrACatalogo,
+                        onIrACarrito = onIrACarrito
                     )
                 }
                 1 -> {
