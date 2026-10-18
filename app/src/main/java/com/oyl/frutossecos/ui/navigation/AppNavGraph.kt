@@ -13,8 +13,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
+import com.OYL.frutossecos.ui.screens.carrito.CarritoScreen
+import com.OYL.frutossecos.ui.screens.catalogo.CatalogoScreen
+import com.OYL.frutossecos.ui.screens.confirmacion.ConfirmacionScreen
+import com.OYL.frutossecos.ui.screens.detalle.DetalleScreen
+import com.OYL.frutossecos.ui.screens.escanerqr.EscanerQrScreen
 import com.OYL.frutossecos.ui.screens.login.LoginScreen
 import com.OYL.frutossecos.ui.screens.main.MainContainerScreen
 import com.OYL.frutossecos.ui.screens.mapa.MapaScreen
@@ -23,7 +30,8 @@ import com.OYL.frutossecos.ui.screens.splash.SplashScreen
 
 /**
  * Grafo de navegación principal de la aplicación OYL Frutos Secos.
- * Conecta Splash, Login, Registro y el Contenedor Principal (Dashboard + Mapa con barra inferior).
+ * Conecta Splash, Login, Registro, el Contenedor Principal (Dashboard + Mapa con barra inferior)
+ * y el flujo de compra: Catálogo → Detalle → Carrito → Confirmación, más el Escáner QR.
  */
 @Composable
 fun AppNavGraph(navController: NavHostController) {
@@ -107,9 +115,81 @@ fun AppNavGraph(navController: NavHostController) {
             )
         }
 
-        // ── Rutas secundarias de respaldo ──────────────────────────────────
+        // ── Pantalla 6: Catálogo de Productos ──────────────────────────────
         composable(NavRoutes.Catalogo.route) {
-            PantallaEnConstruccion(titulo = "Catálogo de Productos", onVolver = { navController.popBackStack() })
+            CatalogoScreen(
+                onVolver = { navController.popBackStack() },
+                onVerDetalle = { productoId ->
+                    navController.navigate(NavRoutes.DetalleProducto.createRoute(productoId))
+                },
+                onEditarProducto = { productoId ->
+                    navController.navigate(NavRoutes.EditarProducto.createRoute(productoId))
+                },
+                onIrAlCarrito = { navController.navigate(NavRoutes.Carrito.route) }
+            )
+        }
+
+        // ── Pantalla 7: Detalle del Producto ───────────────────────────────
+        composable(
+            route = NavRoutes.DetalleProducto.route,
+            arguments = listOf(navArgument("productoId") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val productoId = backStackEntry.arguments?.getInt("productoId") ?: 0
+            DetalleScreen(
+                productoId = productoId,
+                onVolver = { navController.popBackStack() },
+                onEditar = { id ->
+                    navController.navigate(NavRoutes.EditarProducto.createRoute(id))
+                },
+                onIrAlCarrito = { navController.navigate(NavRoutes.Carrito.route) }
+            )
+        }
+
+        // ── Pantalla 8: Escáner QR de Productos ────────────────────────────
+        composable(NavRoutes.EscanearQR.route) {
+            EscanerQrScreen(
+                onVolver = { navController.popBackStack() },
+                onVerProducto = { productoId ->
+                    navController.navigate(NavRoutes.DetalleProducto.createRoute(productoId))
+                }
+            )
+        }
+
+        // ── Pantalla 9: Carrito de Compras ─────────────────────────────────
+        composable(NavRoutes.Carrito.route) {
+            CarritoScreen(
+                onVolver = { navController.popBackStack() },
+                onContinuarCompra = { navController.navigate(NavRoutes.ConfirmarPedido.route) },
+                onVerCatalogo = { navController.navigate(NavRoutes.Catalogo.route) }
+            )
+        }
+
+        // ── Pantalla 10: Confirmación del Pedido ───────────────────────────
+        composable(NavRoutes.ConfirmarPedido.route) {
+            ConfirmacionScreen(
+                onVolver = { navController.popBackStack() },
+                onVerMisPedidos = {
+                    navController.navigate(NavRoutes.MisPedidos.route) {
+                        popUpTo(NavRoutes.Carrito.route) { inclusive = true }
+                    }
+                },
+                onSeguirComprando = {
+                    navController.navigate(NavRoutes.Catalogo.route) {
+                        popUpTo(NavRoutes.Carrito.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // ── Rutas de respaldo (pantallas todavía no desarrolladas) ─────────
+        composable(NavRoutes.MisPedidos.route) {
+            PantallaEnConstruccion(titulo = "Mis Pedidos", onVolver = { navController.popBackStack() })
+        }
+        composable(
+            route = NavRoutes.EditarProducto.route,
+            arguments = listOf(navArgument("productoId") { type = NavType.IntType })
+        ) {
+            PantallaEnConstruccion(titulo = "Editar Producto", onVolver = { navController.popBackStack() })
         }
         composable(NavRoutes.AdminPanel.route) {
             PantallaEnConstruccion(titulo = "Panel de Administración", onVolver = { navController.popBackStack() })

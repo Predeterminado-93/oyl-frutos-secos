@@ -1,4 +1,4 @@
-﻿package com.OYL.frutossecos.data.local.entities
+package com.OYL.frutossecos.data.local.entities
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
@@ -20,6 +20,8 @@ data class ProductoEntity(
     val precio: Double,
     val stock: Int,
     val categoria: String,       // Ej: "Frutos secos", "Semillas", "Deshidratados"
+    val peso: String = "250 gramos",  // Peso o presentación
+    val origen: String = "Nacional",  // Origen del producto
     val activo: Boolean = true,
     val actualizadoEn: Long = System.currentTimeMillis()
 )
