@@ -1,7 +1,6 @@
 
 package com.OYL.frutossecos.ui.screens.main
 
-import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -14,14 +13,7 @@ import androidx.compose.ui.unit.dp
 import com.OYL.frutossecos.ui.screens.dashboard.DashboardScreen
 import com.OYL.frutossecos.ui.screens.mapa.MapaScreen
 import com.OYL.frutossecos.ui.theme.*
-import kotlinx.coroutines.launch
 
-/*
- * Contenedor principal con Barra de Navegación Inferior (Bottom Navigation Bar).
- *
- * Los callbacks onIrA... los resuelve el AppNavGraph, porque Catálogo, Carrito y Escáner
- * son pantallas completas fuera de este contenedor.
- */
 @Composable
 fun MainContainerScreen(
     onCerrarSesion: () -> Unit,
@@ -29,14 +21,12 @@ fun MainContainerScreen(
     onIrACarrito: () -> Unit = {},
     onIrAEscaner: () -> Unit = {},
     onIrAGestionProductos: () -> Unit = {},
-    onIrAGestionInventario: () -> Unit = {}
+    onIrAGestionInventario: () -> Unit = {},
+    onIrAPedidos: () -> Unit = {}
 ) {
     var pestañaSeleccionada by remember { mutableIntStateOf(0) }
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             NavigationBar(
                 containerColor = Color.White,
@@ -108,11 +98,7 @@ fun MainContainerScreen(
 
                 NavigationBarItem(
                     selected = false,
-                    onClick = {
-                        scope.launch {
-                            snackbarHostState.showSnackbar("Módulo de Pedidos: En desarrollo para la siguiente entrega.")
-                        }
-                    },
+                    onClick = onIrAPedidos,
                     icon = {
                         Icon(
                             imageVector = Icons.Default.ShoppingBag,
@@ -128,11 +114,7 @@ fun MainContainerScreen(
 
                 NavigationBarItem(
                     selected = false,
-                    onClick = {
-                        scope.launch {
-                            snackbarHostState.showSnackbar("Módulo de Perfil: Usa el botón en la cabecera para cerrar sesión.")
-                        }
-                    },
+                    onClick = onCerrarSesion,
                     icon = {
                         Icon(
                             imageVector = Icons.Default.Person,
@@ -165,6 +147,7 @@ fun MainContainerScreen(
                         onIrAGestionInventario = onIrAGestionInventario
                     )
                 }
+
                 1 -> {
                     MapaScreen(
                         onVolver = { pestañaSeleccionada = 0 }

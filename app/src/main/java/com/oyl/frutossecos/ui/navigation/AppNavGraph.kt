@@ -117,6 +117,9 @@ fun AppNavGraph(navController: NavHostController) {
                 },
                 onIrAGestionInventario = {
                     navController.navigate(NavRoutes.AlertasStock.route)
+                },
+                onIrAPedidos = {
+                    navController.navigate(NavRoutes.MisPedidos.route)
                 }
             )
         }
