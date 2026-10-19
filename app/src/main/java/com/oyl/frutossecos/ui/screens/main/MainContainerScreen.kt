@@ -22,7 +22,8 @@ fun MainContainerScreen(
     onIrAEscaner: () -> Unit = {},
     onIrAGestionProductos: () -> Unit = {},
     onIrAGestionInventario: () -> Unit = {},
-    onIrAPedidos: () -> Unit = {}
+    onIrAPedidos: () -> Unit = {},
+    onIrANotificaciones: () -> Unit = {}
 ) {
     var pestañaSeleccionada by remember { mutableIntStateOf(0) }
 
@@ -106,6 +107,22 @@ fun MainContainerScreen(
                         )
                     },
                     label = { Text("Pedidos") },
+                    colors = NavigationBarItemDefaults.colors(
+                        unselectedIconColor = BrownMedium.copy(alpha = 0.6f),
+                        unselectedTextColor = BrownMedium.copy(alpha = 0.6f)
+                    )
+                )
+
+                NavigationBarItem(
+                    selected = false,
+                    onClick = onIrANotificaciones,
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.Notifications,
+                            contentDescription = "Notificaciones"
+                        )
+                    },
+                    label = { Text("Avisos") },
                     colors = NavigationBarItemDefaults.colors(
                         unselectedIconColor = BrownMedium.copy(alpha = 0.6f),
                         unselectedTextColor = BrownMedium.copy(alpha = 0.6f)

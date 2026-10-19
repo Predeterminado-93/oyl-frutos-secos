@@ -31,6 +31,7 @@ import com.OYL.frutossecos.ui.screens.splash.SplashScreen
 import com.OYL.frutossecos.ui.screens.gestionproductos.GestionProductosScreen
 import com.OYL.frutossecos.ui.screens.gestioninventario.GestionInventarioScreen
 import com.OYL.frutossecos.ui.screens.pedidos.PedidosScreen
+import com.OYL.frutossecos.ui.screens.notificaciones.NotificacionesScreen
 
 /**
  * Grafo de navegación principal de la aplicación OYL Frutos Secos.
@@ -120,6 +121,9 @@ fun AppNavGraph(navController: NavHostController) {
                 },
                 onIrAPedidos = {
                     navController.navigate(NavRoutes.MisPedidos.route)
+                },
+                onIrANotificaciones = {
+                    navController.navigate(NavRoutes.Notificaciones.route)
                 }
             )
         }
@@ -239,6 +243,9 @@ fun AppNavGraph(navController: NavHostController) {
             GestionInventarioScreen(
                 onVolver = { navController.popBackStack() }
             )
+        }
+        composable(NavRoutes.Notificaciones.route) {
+            NotificacionesScreen()
         }
     }
 }
