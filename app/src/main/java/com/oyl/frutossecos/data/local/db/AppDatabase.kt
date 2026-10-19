@@ -5,15 +5,18 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.OYL.frutossecos.data.local.dao.CarritoDao
 import com.OYL.frutossecos.data.local.dao.MovimientoInventarioDao
+import com.OYL.frutossecos.data.local.dao.NotificacionDao
 import com.OYL.frutossecos.data.local.dao.PedidoDao
 import com.OYL.frutossecos.data.local.dao.ProductoDao
 import com.OYL.frutossecos.data.local.dao.PuntoRetiroDao
 import com.OYL.frutossecos.data.local.dao.UsuarioDao
 import com.OYL.frutossecos.data.local.entities.CarritoItemEntity
 import com.OYL.frutossecos.data.local.entities.MovimientoInventarioEntity
+import com.OYL.frutossecos.data.local.entities.NotificacionEntity
 import com.OYL.frutossecos.data.local.entities.PedidoEntity
 import com.OYL.frutossecos.data.local.entities.ProductoEntity
 import com.OYL.frutossecos.data.local.entities.PuntoRetiroEntity
@@ -29,9 +32,10 @@ import kotlinx.coroutines.launch
         PuntoRetiroEntity::class,
         PedidoEntity::class,
         CarritoItemEntity::class,
-        MovimientoInventarioEntity::class
+        MovimientoInventarioEntity::class,
+        NotificacionEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -42,10 +46,37 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun pedidoDao(): PedidoDao
     abstract fun carritoDao(): CarritoDao
     abstract fun movimientoInventarioDao(): MovimientoInventarioDao
+    abstract fun notificacionDao(): NotificacionDao
 
     companion object {
         @Volatile
         private var INSTANCE: AppDatabase? = null
+
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS notificaciones (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        usuarioId INTEGER NOT NULL,
+                        titulo TEXT NOT NULL,
+                        mensaje TEXT NOT NULL,
+                        tipo TEXT NOT NULL,
+                        fecha INTEGER NOT NULL,
+                        leida INTEGER NOT NULL,
+                        rutaDestino TEXT
+                    )
+                    """.trimIndent()
+                )
+
+                db.execSQL(
+                    """
+                    CREATE INDEX IF NOT EXISTS index_notificaciones_usuarioId
+                    ON notificaciones(usuarioId)
+                    """.trimIndent()
+                )
+            }
+        }
 
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -54,6 +85,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "oyl_frutos_secos.db"
                 )
+                    .addMigrations(MIGRATION_5_6)
                     .fallbackToDestructiveMigration(dropAllTables = true)
                     .addCallback(SeedCallback())
                     .build()
