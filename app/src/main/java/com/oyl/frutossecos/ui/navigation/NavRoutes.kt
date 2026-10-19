@@ -17,9 +17,11 @@ sealed class NavRoutes(val route: String) {
         fun createRoute(productoId: Int) = "detalle/$productoId"
     }
     data object Carrito      : NavRoutes("carrito")
+    data object ConfirmarPedido : NavRoutes("confirmar_pedido")
     data object MisPedidos   : NavRoutes("mis_pedidos")
     data object Mapa         : NavRoutes("mapa")
     data object EscanearQR   : NavRoutes("escanear_qr")
+    data object Perfil       : NavRoutes("perfil")
 
     // ── Admin ──────────────────────────────────────────────────────────────
     data object AdminPanel   : NavRoutes("admin_panel")

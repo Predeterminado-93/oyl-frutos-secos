@@ -5,10 +5,12 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.OYL.frutossecos.data.local.dao.CarritoDao
 import com.OYL.frutossecos.data.local.dao.PedidoDao
 import com.OYL.frutossecos.data.local.dao.ProductoDao
 import com.OYL.frutossecos.data.local.dao.PuntoRetiroDao
 import com.OYL.frutossecos.data.local.dao.UsuarioDao
+import com.OYL.frutossecos.data.local.entities.CarritoItemEntity
 import com.OYL.frutossecos.data.local.entities.PedidoEntity
 import com.OYL.frutossecos.data.local.entities.ProductoEntity
 import com.OYL.frutossecos.data.local.entities.PuntoRetiroEntity
@@ -26,9 +28,10 @@ import kotlinx.coroutines.launch
         UsuarioEntity::class,
         ProductoEntity::class,
         PuntoRetiroEntity::class,
-        PedidoEntity::class
+        PedidoEntity::class,
+        CarritoItemEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -37,6 +40,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun productoDao(): ProductoDao
     abstract fun puntoRetiroDao(): PuntoRetiroDao
     abstract fun pedidoDao(): PedidoDao
+    abstract fun carritoDao(): CarritoDao
 
     companion object {
         @Volatile

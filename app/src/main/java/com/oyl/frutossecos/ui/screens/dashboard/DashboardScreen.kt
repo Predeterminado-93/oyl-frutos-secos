@@ -45,6 +45,8 @@ import com.OYL.frutossecos.ui.theme.*
 @Composable
 fun DashboardScreen(
     onNavegarAMapa: () -> Unit,
+    onIrACatalogo: () -> Unit = {},
+    onIrACarrito: () -> Unit = {},
     onCerrarSesion: () -> Unit,
     viewModel: DashboardViewModel = viewModel()
 ) {
@@ -113,6 +115,42 @@ fun DashboardScreen(
         item {
             HeroBannerImage(onVerOfertas = onNavegarAMapa)
         }
+        // ── Accesos rápidos: Catálogo y Carrito ────────────────────────────
+        item {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Button(
+                    onClick = onIrACatalogo,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = AmberGold,
+                        contentColor = BrownDark
+                    )
+                ) {
+                    Text("🛍️ Catálogo", fontWeight = FontWeight.Bold)
+                }
+                if (!uiState.esAdmin) {
+                    OutlinedButton(
+                        onClick = onIrACarrito,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, AmberGold)
+                    ) {
+                        Text("🛒 Mi carrito", color = BrownDark, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            }
+        }
+
 
         // ── VISTA SEGÚN EL ROL ─────────────────────────────────────────────
         if (uiState.esAdmin) {

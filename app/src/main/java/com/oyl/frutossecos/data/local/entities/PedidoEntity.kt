@@ -17,5 +17,7 @@ data class PedidoEntity(
     val estado: String,          // "PENDIENTE" | "EN_PREPARACION" | "LISTO_RETIRO" | "ENTREGADO"
     val total: Double,
     val itemsResumen: String,
-    val puntoRetiroNombre: String
+    val puntoRetiroNombre: String,
+    val metodoEntrega: String = "Retiro en tienda",  // "Retiro en tienda" | "Despacho a domicilio"
+    val telefonoContacto: String = ""
 )
