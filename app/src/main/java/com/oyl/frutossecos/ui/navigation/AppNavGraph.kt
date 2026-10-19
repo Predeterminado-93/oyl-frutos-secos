@@ -251,6 +251,9 @@ fun AppNavGraph(navController: NavHostController) {
                         "mis_pedidos" -> {
                             navController.navigate(NavRoutes.MisPedidos.route)
                         }
+                        "gestion_inventario" -> {
+                            navController.navigate(NavRoutes.AlertasStock.route)
+                        }
                         else -> Unit
                     }
                 }
