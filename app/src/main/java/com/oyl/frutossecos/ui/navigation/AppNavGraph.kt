@@ -245,7 +245,16 @@ fun AppNavGraph(navController: NavHostController) {
             )
         }
         composable(NavRoutes.Notificaciones.route) {
-            NotificacionesScreen()
+            NotificacionesScreen(
+                onAbrirDestino = { destino ->
+                    when (destino) {
+                        "mis_pedidos" -> {
+                            navController.navigate(NavRoutes.MisPedidos.route)
+                        }
+                        else -> Unit
+                    }
+                }
+            )
         }
     }
 }

@@ -1,3 +1,4 @@
+
 package com.OYL.frutossecos.ui.screens.gestioninventario
 
 import androidx.compose.foundation.background
@@ -6,7 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Warning
@@ -53,7 +54,7 @@ fun GestionInventarioScreen(
             ) {
                 IconButton(onClick = onVolver) {
                     Icon(
-                        imageVector = Icons.Default.ArrowBack,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Volver",
                         tint = BrownDark
                     )
@@ -94,7 +95,7 @@ fun GestionInventarioScreen(
         ) {
             item {
                 val stockBajo = uiState.productos.count {
-                    it.activo && it.stock <= 5
+                    it.activo && it.stock <= it.stockMinimo
                 }
 
                 Row(
@@ -465,7 +466,7 @@ private fun ProductoInventarioCard(
     producto: ProductoEntity,
     onRegistrarMovimiento: () -> Unit
 ) {
-    val stockBajo = producto.stock <= 5
+    val stockBajo = producto.stock <= producto.stockMinimo
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -517,7 +518,7 @@ private fun ProductoInventarioCard(
 
             if (stockBajo) {
                 Text(
-                    text = "Stock bajo: quedan 5 unidades o menos.",
+                    text = "Stock bajo: quedan ${producto.stock} unidades. Mínimo configurado: ${producto.stockMinimo}.",
                     color = ErrorRed,
                     style = MaterialTheme.typography.bodySmall
                 )

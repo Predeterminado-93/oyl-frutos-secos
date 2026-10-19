@@ -150,7 +150,15 @@ private fun ProductoCard(
             Text("Categoría: ${producto.categoria}")
             Text("Presentación: ${producto.peso}")
             Text("Precio: ${formatearPrecio(producto.precio)}")
-            Text("Stock: ${producto.stock}")
+            Text("Stock actual: ${producto.stock}")
+            Text("Stock mínimo: ${producto.stockMinimo}")
+            if (producto.stock <= producto.stockMinimo) {
+                Text(
+                    text = "Stock bajo",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
             Text(
                 text = if (producto.activo) "Activo" else "Desactivado",
                 color = if (producto.activo) {
@@ -249,7 +257,15 @@ private fun FormularioProducto(
                 OutlinedTextField(
                     value = estado.stock,
                     onValueChange = viewModel::cambiarStock,
-                    label = { Text("Stock") },
+                    label = { Text("Stock actual") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+
+                OutlinedTextField(
+                    value = estado.stockMinimo,
+                    onValueChange = viewModel::cambiarStockMinimo,
+                    label = { Text("Stock mínimo para alertas") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )

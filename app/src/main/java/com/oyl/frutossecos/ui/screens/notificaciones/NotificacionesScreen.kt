@@ -24,7 +24,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -51,6 +51,7 @@ import java.util.Locale
 
 @Composable
 fun NotificacionesScreen(
+    onAbrirDestino: (String) -> Unit = {},
     viewModel: NotificacionesViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -88,9 +89,7 @@ fun NotificacionesScreen(
                 }
 
                 if (uiState.noLeidas > 0) {
-                    IconButton(
-                        onClick = viewModel::marcarTodasComoLeidas
-                    ) {
+                    IconButton(onClick = viewModel::marcarTodasComoLeidas) {
                         Icon(
                             imageVector = Icons.Default.DoneAll,
                             contentDescription = "Marcar todas como leídas"
@@ -136,9 +135,7 @@ fun NotificacionesScreen(
                             .padding(24.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(
                                 imageVector = Icons.Default.Notifications,
                                 contentDescription = null,
@@ -176,6 +173,10 @@ fun NotificacionesScreen(
                                     if (!notificacion.leida) {
                                         viewModel.marcarComoLeida(notificacion.id)
                                     }
+
+                                    notificacion.rutaDestino
+                                        ?.takeIf { it.isNotBlank() }
+                                        ?.let(onAbrirDestino)
                                 },
                                 onEliminar = {
                                     notificacionEliminar = notificacion
@@ -236,9 +237,7 @@ private fun NotificacionCard(
                 MaterialTheme.colorScheme.secondaryContainer
             }
         ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 2.dp
-        )
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
             modifier = Modifier
@@ -262,12 +261,8 @@ private fun NotificacionCard(
 
             Spacer(modifier = Modifier.size(12.dp))
 
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = notificacion.titulo,
                         modifier = Modifier.weight(1f),
@@ -317,7 +312,7 @@ private fun NotificacionCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                Divider(
+                HorizontalDivider(
                     modifier = Modifier.padding(top = 8.dp),
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                 )

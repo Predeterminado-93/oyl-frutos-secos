@@ -145,7 +145,9 @@ class ConfirmacionViewModel(application: Application) : AndroidViewModel(applica
                                 usuarioId = usuario.id,
                                 titulo = "Pedido recibido",
                                 mensaje = "Tu pedido N° ${pedido.id} fue recibido y está pendiente de validación.",
-                                tipo = "PEDIDO"
+                                tipo = "PEDIDO",
+                                rutaDestino = "mis_pedidos"
+
                             )
                         )
                     } catch (e: Exception) {

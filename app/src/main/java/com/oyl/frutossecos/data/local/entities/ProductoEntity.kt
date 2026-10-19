@@ -1,3 +1,4 @@
+
 package com.OYL.frutossecos.data.local.entities
 
 import androidx.room.Entity
@@ -16,12 +17,13 @@ data class ProductoEntity(
     val id: Int = 0,
     val nombre: String,
     val descripcion: String,
-    val fotoUrl: String,         // URL remota o URI local de imagen
+    val fotoUrl: String,
     val precio: Double,
     val stock: Int,
-    val categoria: String,       // Ej: "Frutos secos", "Semillas", "Deshidratados"
-    val peso: String = "250 gramos",  // Peso o presentación
-    val origen: String = "Nacional",  // Origen del producto
+    val categoria: String,
+    val peso: String = "250 gramos",
+    val origen: String = "Nacional",
     val activo: Boolean = true,
-    val actualizadoEn: Long = System.currentTimeMillis()
+    val actualizadoEn: Long = System.currentTimeMillis(),
+    val stockMinimo: Int = 5
 )
