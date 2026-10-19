@@ -1,10 +1,13 @@
+
 package com.OYL.frutossecos.ui.screens.pedidos
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.OYL.frutossecos.data.local.db.AppDatabase
+import com.OYL.frutossecos.data.local.entities.NotificacionEntity
 import com.OYL.frutossecos.data.local.entities.PedidoEntity
+import com.OYL.frutossecos.data.repository.NotificacionRepository
 import com.OYL.frutossecos.data.repository.UsuarioRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,6 +30,7 @@ class PedidosViewModel(application: Application) : AndroidViewModel(application)
     private val db = AppDatabase.getDatabase(application)
     private val pedidoDao = db.pedidoDao()
     private val usuarioRepository = UsuarioRepository(db.usuarioDao())
+    private val notificacionRepository = NotificacionRepository(db.notificacionDao())
 
     private val _uiState = MutableStateFlow(PedidosUiState())
     val uiState: StateFlow<PedidosUiState> = _uiState.asStateFlow()
@@ -57,9 +61,7 @@ class PedidosViewModel(application: Application) : AndroidViewModel(application)
                     "Usuario activo: id=${usuario.id}, alias=${usuario.alias}, rol=${usuario.rol}"
                 )
 
-                _uiState.update {
-                    it.copy(esAdministrador = administrador)
-                }
+                _uiState.update { it.copy(esAdministrador = administrador) }
 
                 val flujoPedidos = if (administrador) {
                     pedidoDao.todosLosPedidos()
@@ -92,9 +94,7 @@ class PedidosViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun cambiarFiltro(estado: String) {
-        _uiState.update {
-            it.copy(estadoFiltro = estado)
-        }
+        _uiState.update { it.copy(estadoFiltro = estado) }
     }
 
     fun actualizarEstado(pedidoId: Int, nuevoEstado: String) {
@@ -115,25 +115,65 @@ class PedidosViewModel(application: Application) : AndroidViewModel(application)
             }
 
             try {
+                val pedido = _uiState.value.pedidos.firstOrNull { it.id == pedidoId }
+
+                if (pedido == null) {
+                    _uiState.update {
+                        it.copy(
+                            guardando = false,
+                            error = "No se encontró el pedido seleccionado."
+                        )
+                    }
+                    return@launch
+                }
+
+                if (pedido.estado == nuevoEstado) {
+                    _uiState.update {
+                        it.copy(
+                            guardando = false,
+                            mensaje = "El pedido ya tiene ese estado."
+                        )
+                    }
+                    return@launch
+                }
+
                 val filasActualizadas = pedidoDao.actualizarEstado(
                     pedidoId = pedidoId,
                     nuevoEstado = nuevoEstado
                 )
 
-                _uiState.update {
-                    it.copy(
-                        guardando = false,
-                        mensaje = if (filasActualizadas > 0) {
-                            "Estado del pedido actualizado."
-                        } else {
-                            null
-                        },
-                        error = if (filasActualizadas == 0) {
-                            "No se encontró el pedido seleccionado."
-                        } else {
-                            null
-                        }
+                if (filasActualizadas > 0) {
+                    val nombreEstado = when (nuevoEstado) {
+                        "PENDIENTE" -> "Pendiente de validación"
+                        "EN_PREPARACION" -> "En preparación"
+                        "LISTO_RETIRO" -> "Listo para retirar"
+                        "ENTREGADO" -> "Entregado"
+                        else -> nuevoEstado
+                    }
+
+                    notificacionRepository.insertar(
+                        NotificacionEntity(
+                            usuarioId = pedido.usuarioId,
+                            titulo = "Actualización de pedido",
+                            mensaje = "Tu pedido N° ${pedido.id} ahora está: $nombreEstado.",
+                            tipo = "PEDIDO",
+                            rutaDestino = "mis_pedidos"
+                        )
                     )
+
+                    _uiState.update {
+                        it.copy(
+                            guardando = false,
+                            mensaje = "Estado del pedido actualizado."
+                        )
+                    }
+                } else {
+                    _uiState.update {
+                        it.copy(
+                            guardando = false,
+                            error = "No se encontró el pedido seleccionado."
+                        )
+                    }
                 }
             } catch (e: Exception) {
                 _uiState.update {
@@ -147,8 +187,6 @@ class PedidosViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun limpiarMensajes() {
-        _uiState.update {
-            it.copy(error = null, mensaje = null)
-        }
+        _uiState.update { it.copy(error = null, mensaje = null) }
     }
 }
