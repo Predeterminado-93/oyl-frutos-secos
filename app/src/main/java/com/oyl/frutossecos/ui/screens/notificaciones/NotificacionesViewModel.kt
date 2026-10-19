@@ -7,9 +7,12 @@ import androidx.lifecycle.viewModelScope
 import com.OYL.frutossecos.data.local.db.AppDatabase
 import com.OYL.frutossecos.data.local.entities.NotificacionEntity
 import com.OYL.frutossecos.data.repository.NotificacionRepository
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -29,6 +32,8 @@ class NotificacionesViewModel(application: Application) : AndroidViewModel(appli
     val uiState: StateFlow<NotificacionesUiState> = _uiState.asStateFlow()
 
     private var usuarioIdActual: Int? = null
+    private var observacionNotificaciones: Job? = null
+    private var observacionNoLeidas: Job? = null
 
     init {
         observarUsuarioActivo()
@@ -37,38 +42,58 @@ class NotificacionesViewModel(application: Application) : AndroidViewModel(appli
     private fun observarUsuarioActivo() {
         viewModelScope.launch {
             db.usuarioDao().usuarioActivo().collect { usuario ->
-                if (usuario == null) {
-                    usuarioIdActual = null
-                    _uiState.value = NotificacionesUiState(
-                        isLoading = false
-                    )
-                } else if (usuarioIdActual != usuario.id) {
-                    usuarioIdActual = usuario.id
-                    cargarNotificaciones(usuario.id)
+                if (usuario?.id != usuarioIdActual) {
+                    observacionNotificaciones?.cancel()
+                    observacionNoLeidas?.cancel()
+                    usuarioIdActual = usuario?.id
+
+                    if (usuario == null) {
+                        _uiState.value = NotificacionesUiState(isLoading = false)
+                    } else {
+                        _uiState.value = NotificacionesUiState()
+
+                        observarNotificaciones(usuario.id)
+                        observarNoLeidas(usuario.id)
+                    }
                 }
             }
         }
     }
 
-    private fun cargarNotificaciones(usuarioId: Int) {
-        viewModelScope.launch {
-            repository.obtenerNotificaciones(usuarioId).collect { lista ->
-                _uiState.update {
-                    it.copy(
-                        notificaciones = lista,
-                        isLoading = false,
-                        error = null
-                    )
+    private fun observarNotificaciones(usuarioId: Int) {
+        observacionNotificaciones = viewModelScope.launch {
+            repository.obtenerNotificaciones(usuarioId)
+                .catch { error ->
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            error = "No se pudieron cargar las notificaciones."
+                        )
+                    }
                 }
-            }
+                .collect { lista ->
+                    _uiState.update {
+                        it.copy(
+                            notificaciones = lista,
+                            isLoading = false,
+                            error = null
+                        )
+                    }
+                }
         }
+    }
 
-        viewModelScope.launch {
-            repository.contarNoLeidas(usuarioId).collect { cantidad ->
-                _uiState.update {
-                    it.copy(noLeidas = cantidad)
+    private fun observarNoLeidas(usuarioId: Int) {
+        observacionNoLeidas = viewModelScope.launch {
+            repository.contarNoLeidas(usuarioId)
+                .catch {
+                    _uiState.update {
+                        it.copy(error = "No se pudo actualizar el contador de notificaciones.")
+                    }
                 }
-            }
+                .collect { cantidad ->
+                    _uiState.update { it.copy(noLeidas = cantidad) }
+                }
         }
     }
 
@@ -129,8 +154,6 @@ class NotificacionesViewModel(application: Application) : AndroidViewModel(appli
     }
 
     fun limpiarError() {
-        _uiState.update {
-            it.copy(error = null)
-        }
+        _uiState.update { it.copy(error = null) }
     }
 }
