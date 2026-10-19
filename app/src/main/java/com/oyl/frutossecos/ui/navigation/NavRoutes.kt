@@ -1,3 +1,4 @@
+
 package com.OYL.frutossecos.ui.navigation
 
 /**
@@ -6,25 +7,26 @@ package com.OYL.frutossecos.ui.navigation
  */
 sealed class NavRoutes(val route: String) {
     // ── Pantallas principales ──────────────────────────────────────────────
-    data object Splash       : NavRoutes("splash")
-    data object Login        : NavRoutes("login")
-    data object Registro     : NavRoutes("registro")
-    data object Dashboard    : NavRoutes("dashboard")
+    data object Splash : NavRoutes("splash")
+    data object Login : NavRoutes("login")
+    data object Registro : NavRoutes("registro")
+    data object Dashboard : NavRoutes("dashboard")
 
     // ── Cliente ────────────────────────────────────────────────────────────
-    data object Catalogo     : NavRoutes("catalogo")
+    data object Catalogo : NavRoutes("catalogo")
     data object DetalleProducto : NavRoutes("detalle/{productoId}") {
         fun createRoute(productoId: Int) = "detalle/$productoId"
     }
-    data object Carrito      : NavRoutes("carrito")
+    data object Carrito : NavRoutes("carrito")
     data object ConfirmarPedido : NavRoutes("confirmar_pedido")
-    data object MisPedidos   : NavRoutes("mis_pedidos")
-    data object Mapa         : NavRoutes("mapa")
-    data object EscanearQR   : NavRoutes("escanear_qr")
-    data object Perfil       : NavRoutes("perfil")
+    data object MisPedidos : NavRoutes("mis_pedidos")
+    data object Notificaciones : NavRoutes("notificaciones")
+    data object Mapa : NavRoutes("mapa")
+    data object EscanearQR : NavRoutes("escanear_qr")
+    data object Perfil : NavRoutes("perfil")
 
     // ── Admin ──────────────────────────────────────────────────────────────
-    data object AdminPanel   : NavRoutes("admin_panel")
+    data object AdminPanel : NavRoutes("admin_panel")
     data object GestionProductos : NavRoutes("admin_productos")
     data object EditarProducto : NavRoutes("admin_editar/{productoId}") {
         fun createRoute(productoId: Int) = "admin_editar/$productoId"

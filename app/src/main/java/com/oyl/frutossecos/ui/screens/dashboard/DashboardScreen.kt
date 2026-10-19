@@ -1,3 +1,4 @@
+
 package com.OYL.frutossecos.ui.screens.dashboard
 
 import androidx.compose.animation.*
@@ -48,6 +49,8 @@ fun DashboardScreen(
     onIrACatalogo: () -> Unit = {},
     onIrACarrito: () -> Unit = {},
     onCerrarSesion: () -> Unit,
+    onIrAGestionProductos: () -> Unit = {},
+    onIrAGestionInventario: () -> Unit = {},
     viewModel: DashboardViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -101,7 +104,6 @@ fun DashboardScreen(
             .background(CreamWhite),
         contentPadding = PaddingValues(bottom = 24.dp)
     ) {
-        // ── Cabecera de Bienvenida con Rol ─────────────────────────────────
         item {
             DashboardHeader(
                 nombre = uiState.usuario?.nombre ?: "Usuario",
@@ -111,11 +113,10 @@ fun DashboardScreen(
             )
         }
 
-        // ── Banner con Imagen Generada por IA ──────────────────────────────
         item {
             HeroBannerImage(onVerOfertas = onNavegarAMapa)
         }
-        // ── Accesos rápidos: Catálogo y Carrito ────────────────────────────
+
         item {
             Row(
                 modifier = Modifier
@@ -151,19 +152,17 @@ fun DashboardScreen(
             }
         }
 
-
-        // ── VISTA SEGÚN EL ROL ─────────────────────────────────────────────
         if (uiState.esAdmin) {
-            // PANEL DE ADMINISTRACIÓN
             item {
                 AdminDashboardContent(
                     pedidosPendientes = uiState.pedidosPendientesAdmin,
                     productosStockBajo = uiState.productosStockBajo,
-                    onVerMapa = onNavegarAMapa
+                    onVerMapa = onNavegarAMapa,
+                    onIrAGestionProductos = onIrAGestionProductos,
+                    onIrAGestionInventario = onIrAGestionInventario
                 )
             }
         } else {
-            // PANEL DE CLIENTE
             item {
                 ClienteDashboardContent(
                     pedidosRecientes = uiState.pedidosRecientes,
@@ -175,9 +174,6 @@ fun DashboardScreen(
     }
 }
 
-/**
- * Cabecera superior con saludo, badge de rol y botón de cerrar sesión.
- */
 @Composable
 private fun DashboardHeader(
     nombre: String,
@@ -257,9 +253,6 @@ private fun DashboardHeader(
     }
 }
 
-/**
- * Hero Banner principal con la imagen generada por IA y estética OYL.
- */
 @Composable
 private fun HeroBannerImage(onVerOfertas: () -> Unit) {
     Card(
@@ -271,7 +264,6 @@ private fun HeroBannerImage(onVerOfertas: () -> Unit) {
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Imagen generada por IA
             Image(
                 painter = painterResource(id = R.drawable.banner_frutos_secos),
                 contentDescription = "Frutos secos naturales OYL",
@@ -279,7 +271,6 @@ private fun HeroBannerImage(onVerOfertas: () -> Unit) {
                 modifier = Modifier.fillMaxSize()
             )
 
-            // Gradiente oscuro suave para legibilidad del texto
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -294,7 +285,6 @@ private fun HeroBannerImage(onVerOfertas: () -> Unit) {
                     )
             )
 
-            // Contenido sobre la imagen
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -334,9 +324,6 @@ private fun HeroBannerImage(onVerOfertas: () -> Unit) {
     }
 }
 
-/**
- * Contenido del Dashboard para Rol CLIENTE.
- */
 @Composable
 private fun ClienteDashboardContent(
     pedidosRecientes: List<PedidoEntity>,
@@ -344,7 +331,6 @@ private fun ClienteDashboardContent(
     onVerMapa: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        // ── Tarjeta de Acceso a Puntos de Retiro ───────────────────────────
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -386,7 +372,6 @@ private fun ClienteDashboardContent(
             }
         }
 
-        // ── Estado de Pedido Reciente (si tiene) ────────────────────────────
         val ultimoPedido = pedidosRecientes.firstOrNull()
         if (ultimoPedido != null) {
             Text(
@@ -459,7 +444,6 @@ private fun ClienteDashboardContent(
             }
         }
 
-        // ── Productos Destacados ───────────────────────────────────────────
         Text(
             text = "Productos Destacados",
             style = MaterialTheme.typography.titleMedium,
@@ -478,7 +462,6 @@ private fun ClienteDashboardContent(
             }
         }
 
-        // ── Promociones de Temporada ───────────────────────────────────────
         Text(
             text = "Promociones OYL",
             style = MaterialTheme.typography.titleMedium,
@@ -521,16 +504,61 @@ private fun ClienteDashboardContent(
     }
 }
 
-/**
- * Contenido del Dashboard para Rol ADMINISTRADOR.
- */
 @Composable
 private fun AdminDashboardContent(
     pedidosPendientes: List<PedidoEntity>,
     productosStockBajo: List<ProductoEntity>,
-    onVerMapa: () -> Unit
+    onVerMapa: () -> Unit,
+    onIrAGestionProductos: () -> Unit,
+    onIrAGestionInventario: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
+        Button(
+            onClick = onIrAGestionProductos,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .height(50.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = AmberGold,
+                contentColor = BrownDark
+            )
+        ) {
+            Icon(
+                imageVector = Icons.Default.Inventory2,
+                contentDescription = null
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = "Gestionar productos",
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        Button(
+            onClick = onIrAGestionInventario,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 4.dp)
+                .height(50.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = BrownDark,
+                contentColor = CreamWhite
+            )
+        ) {
+            Icon(
+                imageVector = Icons.Default.Warehouse,
+                contentDescription = null
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = "Gestionar inventario",
+                fontWeight = FontWeight.Bold
+            )
+        }
+
         Text(
             text = "Resumen Operativo en Tiempo Real",
             style = MaterialTheme.typography.titleMedium,
@@ -539,7 +567,6 @@ private fun AdminDashboardContent(
             modifier = Modifier.padding(start = 16.dp, top = 12.dp, bottom = 8.dp)
         )
 
-        // ── Tarjetas Métricas KPI ──────────────────────────────────────────
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -575,7 +602,6 @@ private fun AdminDashboardContent(
 
         Spacer(Modifier.height(20.dp))
 
-        // ── Alertas de Stock Bajo ──────────────────────────────────────────
         Text(
             text = "⚠️ Alertas de Stock Bajo (≤ 5 unidades)",
             style = MaterialTheme.typography.titleMedium,
@@ -647,7 +673,6 @@ private fun AdminDashboardContent(
 
         Spacer(Modifier.height(16.dp))
 
-        // ── Pedidos Pendientes de Atención ─────────────────────────────────
         Text(
             text = "📋 Pedidos por Despachar / Retirar",
             style = MaterialTheme.typography.titleMedium,

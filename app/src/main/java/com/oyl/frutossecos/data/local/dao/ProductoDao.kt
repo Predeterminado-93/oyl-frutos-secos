@@ -22,6 +22,9 @@ interface ProductoDao {
     @Query("SELECT * FROM productos WHERE activo = 1 ORDER BY nombre ASC")
     fun todosActivos(): Flow<List<ProductoEntity>>
 
+    @Query("SELECT * FROM productos ORDER BY nombre ASC")
+    fun todos(): Flow<List<ProductoEntity>>
+
     @Query("SELECT * FROM productos WHERE categoria = :categoria AND activo = 1 ORDER BY nombre ASC")
     fun porCategoria(categoria: String): Flow<List<ProductoEntity>>
 
@@ -39,4 +42,7 @@ interface ProductoDao {
 
     @Query("UPDATE productos SET stock = :nuevoStock WHERE id = :id")
     suspend fun actualizarStock(id: Int, nuevoStock: Int)
+
+    @Query("SELECT COUNT(*) FROM productos")
+    suspend fun contar(): Int
 }

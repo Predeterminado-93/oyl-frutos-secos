@@ -1,3 +1,4 @@
+
 package com.OYL.frutossecos.ui.screens.confirmacion
 
 import android.app.Application
@@ -5,6 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.OYL.frutossecos.data.local.db.AppDatabase
 import com.OYL.frutossecos.data.local.entities.CarritoItemEntity
+import com.OYL.frutossecos.data.local.entities.NotificacionEntity
 import com.OYL.frutossecos.data.local.entities.PedidoEntity
 import com.OYL.frutossecos.data.local.entities.PuntoRetiroEntity
 import com.OYL.frutossecos.data.local.entities.UsuarioEntity
@@ -12,6 +14,7 @@ import com.OYL.frutossecos.data.repository.COSTO_DESPACHO
 import com.OYL.frutossecos.data.repository.CarritoRepository
 import com.OYL.frutossecos.data.repository.METODO_DESPACHO
 import com.OYL.frutossecos.data.repository.METODO_RETIRO
+import com.OYL.frutossecos.data.repository.NotificacionRepository
 import com.OYL.frutossecos.data.repository.PedidoRepository
 import com.OYL.frutossecos.data.repository.UsuarioRepository
 import kotlinx.coroutines.delay
@@ -43,6 +46,7 @@ class ConfirmacionViewModel(application: Application) : AndroidViewModel(applica
     private val usuarioRepository = UsuarioRepository(db.usuarioDao())
     private val carritoRepository = CarritoRepository(db.carritoDao(), db.productoDao())
     private val pedidoRepository = PedidoRepository(db)
+    private val notificacionRepository = NotificacionRepository(db.notificacionDao())
 
     private var usuarioActual: UsuarioEntity? = null
 
@@ -135,11 +139,29 @@ class ConfirmacionViewModel(application: Application) : AndroidViewModel(applica
                 telefono = state.telefono.trim()
             ).fold(
                 onSuccess = { pedido ->
-                    _uiState.update { it.copy(isEnviando = false, pedidoConfirmado = pedido) }
+                    try {
+                        notificacionRepository.insertar(
+                            NotificacionEntity(
+                                usuarioId = usuario.id,
+                                titulo = "Pedido recibido",
+                                mensaje = "Tu pedido N° ${pedido.id} fue recibido y está pendiente de validación.",
+                                tipo = "PEDIDO"
+                            )
+                        )
+                    } catch (e: Exception) {
+                        // La notificación no debe impedir mostrar un pedido guardado correctamente.
+                    }
+
+                    _uiState.update {
+                        it.copy(isEnviando = false, pedidoConfirmado = pedido)
+                    }
                 },
                 onFailure = { error ->
                     _uiState.update {
-                        it.copy(isEnviando = false, errorMessage = error.message ?: "No se pudo confirmar el pedido.")
+                        it.copy(
+                            isEnviando = false,
+                            errorMessage = error.message ?: "No se pudo confirmar el pedido."
+                        )
                     }
                 }
             )

@@ -1,16 +1,22 @@
+
 package com.OYL.frutossecos.data.local.db
 
 import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.OYL.frutossecos.data.local.dao.CarritoDao
+import com.OYL.frutossecos.data.local.dao.MovimientoInventarioDao
+import com.OYL.frutossecos.data.local.dao.NotificacionDao
 import com.OYL.frutossecos.data.local.dao.PedidoDao
 import com.OYL.frutossecos.data.local.dao.ProductoDao
 import com.OYL.frutossecos.data.local.dao.PuntoRetiroDao
 import com.OYL.frutossecos.data.local.dao.UsuarioDao
 import com.OYL.frutossecos.data.local.entities.CarritoItemEntity
+import com.OYL.frutossecos.data.local.entities.MovimientoInventarioEntity
+import com.OYL.frutossecos.data.local.entities.NotificacionEntity
 import com.OYL.frutossecos.data.local.entities.PedidoEntity
 import com.OYL.frutossecos.data.local.entities.ProductoEntity
 import com.OYL.frutossecos.data.local.entities.PuntoRetiroEntity
@@ -19,19 +25,17 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-/**
- * Base de datos Room principal de OYL Frutos Secos.
- * Versión 3: soporte para usuarios, productos, puntos de retiro y pedidos.
- */
 @Database(
     entities = [
         UsuarioEntity::class,
         ProductoEntity::class,
         PuntoRetiroEntity::class,
         PedidoEntity::class,
-        CarritoItemEntity::class
+        CarritoItemEntity::class,
+        MovimientoInventarioEntity::class,
+        NotificacionEntity::class
     ],
-    version = 4,
+    version = 6,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -41,10 +45,38 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun puntoRetiroDao(): PuntoRetiroDao
     abstract fun pedidoDao(): PedidoDao
     abstract fun carritoDao(): CarritoDao
+    abstract fun movimientoInventarioDao(): MovimientoInventarioDao
+    abstract fun notificacionDao(): NotificacionDao
 
     companion object {
         @Volatile
         private var INSTANCE: AppDatabase? = null
+
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS notificaciones (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        usuarioId INTEGER NOT NULL,
+                        titulo TEXT NOT NULL,
+                        mensaje TEXT NOT NULL,
+                        tipo TEXT NOT NULL,
+                        fecha INTEGER NOT NULL,
+                        leida INTEGER NOT NULL,
+                        rutaDestino TEXT
+                    )
+                    """.trimIndent()
+                )
+
+                db.execSQL(
+                    """
+                    CREATE INDEX IF NOT EXISTS index_notificaciones_usuarioId
+                    ON notificaciones(usuarioId)
+                    """.trimIndent()
+                )
+            }
+        }
 
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -53,6 +85,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "oyl_frutos_secos.db"
                 )
+                    .addMigrations(MIGRATION_5_6)
                     .fallbackToDestructiveMigration(dropAllTables = true)
                     .addCallback(SeedCallback())
                     .build()
@@ -62,9 +95,6 @@ abstract class AppDatabase : RoomDatabase() {
         }
     }
 
-    /**
-     * Callback que inserta datos de demostración al crear o abrir la BD.
-     */
     private class SeedCallback : Callback() {
         override fun onCreate(db: SupportSQLiteDatabase) {
             super.onCreate(db)
@@ -85,9 +115,7 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         private suspend fun ensureInitialData(db: AppDatabase) {
-            // Garantizar que exista el Administrador
-            val adminExistente = db.usuarioDao().obtenerPorAlias("admin")
-            if (adminExistente == null) {
+            if (db.usuarioDao().obtenerPorAlias("admin") == null) {
                 db.usuarioDao().insertar(
                     UsuarioEntity(
                         nombre = "Administrador",
@@ -101,33 +129,8 @@ abstract class AppDatabase : RoomDatabase() {
                 )
             }
 
-            // Garantizar puntos de retiro si la tabla está vacía
-            if (db.puntoRetiroDao().contar() == 0) {
-                seedPuntosRetiro(db)
-            }
-
-            // Garantizar pedidos si la tabla está vacía
-            if (db.pedidoDao().contar() == 0) {
-                seedPedidos(db)
-            }
-        }
-
-        private suspend fun seedDatabase(db: AppDatabase) {
-            // Usuario Administrador de demostración preconfigurado en duro
-            db.usuarioDao().insertar(
-                UsuarioEntity(
-                    nombre = "Administrador",
-                    alias = "admin",
-                    email = "admin@admin.cl",
-                    password = "admin123",
-                    telefono = "+56 9 1234 1234",
-                    direccion = "Santiago",
-                    rol = "ADMIN"
-                )
-            )
-
-            // Usuario Cliente de demostración inicial
-            val clienteId = db.usuarioDao().insertar(
+            val clienteExistente = db.usuarioDao().obtenerPorAlias("cliente")
+            val clienteId = clienteExistente?.id ?: db.usuarioDao().insertar(
                 UsuarioEntity(
                     nombre = "Cliente Demo",
                     alias = "cliente",
@@ -139,7 +142,61 @@ abstract class AppDatabase : RoomDatabase() {
                 )
             ).toInt()
 
-            // Productos de demo
+            if (db.productoDao().contar() == 0) {
+                seedProductos(db)
+            }
+
+            if (db.puntoRetiroDao().contar() == 0) {
+                seedPuntosRetiro(db)
+            }
+
+            if (db.pedidoDao().contar() == 0) {
+                seedPedidos(db, clienteId)
+            }
+        }
+
+        private suspend fun seedDatabase(db: AppDatabase) {
+            if (db.usuarioDao().obtenerPorAlias("admin") == null) {
+                db.usuarioDao().insertar(
+                    UsuarioEntity(
+                        nombre = "Administrador",
+                        alias = "admin",
+                        email = "admin@admin.cl",
+                        password = "admin123",
+                        telefono = "+56 9 1234 1234",
+                        direccion = "Santiago",
+                        rol = "ADMIN"
+                    )
+                )
+            }
+
+            val clienteExistente = db.usuarioDao().obtenerPorAlias("cliente")
+            val clienteId = clienteExistente?.id ?: db.usuarioDao().insertar(
+                UsuarioEntity(
+                    nombre = "Cliente Demo",
+                    alias = "cliente",
+                    email = "cliente@demo.cl",
+                    password = "cliente123",
+                    telefono = "+56 9 9876 5432",
+                    direccion = "Providencia, Santiago",
+                    rol = "CLIENTE"
+                )
+            ).toInt()
+
+            if (db.productoDao().contar() == 0) {
+                seedProductos(db)
+            }
+
+            if (db.puntoRetiroDao().contar() == 0) {
+                seedPuntosRetiro(db)
+            }
+
+            if (db.pedidoDao().contar() == 0) {
+                seedPedidos(db, clienteId)
+            }
+        }
+
+        private suspend fun seedProductos(db: AppDatabase) {
             val productos = listOf(
                 ProductoEntity(
                     nombre = "Almendras crudas",
@@ -190,10 +247,8 @@ abstract class AppDatabase : RoomDatabase() {
                     categoria = "Semillas"
                 )
             )
-            db.productoDao().insertarTodos(productos)
 
-            seedPuntosRetiro(db)
-            seedPedidos(db, clienteId)
+            db.productoDao().insertarTodos(productos)
         }
 
         private suspend fun seedPuntosRetiro(db: AppDatabase) {
@@ -247,10 +302,11 @@ abstract class AppDatabase : RoomDatabase() {
                     esTiendaPrincipal = false
                 )
             )
+
             db.puntoRetiroDao().insertarTodos(puntos)
         }
 
-        private suspend fun seedPedidos(db: AppDatabase, clienteId: Int = 2) {
+        private suspend fun seedPedidos(db: AppDatabase, clienteId: Int) {
             val pedidos = listOf(
                 PedidoEntity(
                     usuarioId = clienteId,
@@ -271,15 +327,6 @@ abstract class AppDatabase : RoomDatabase() {
                     puntoRetiroNombre = "Punto Retiro Metro Los Leones"
                 ),
                 PedidoEntity(
-                    usuarioId = 3,
-                    usuarioAlias = "maria_l",
-                    fecha = System.currentTimeMillis() - 3600000L * 5,
-                    estado = "PENDIENTE",
-                    total = 2200.0,
-                    itemsResumen = "Pistachos tostados (500g)",
-                    puntoRetiroNombre = "Punto Retiro Santiago Centro"
-                ),
-                PedidoEntity(
                     usuarioId = clienteId,
                     usuarioAlias = "cliente",
                     fecha = System.currentTimeMillis() - 3600000L * 72,
@@ -289,6 +336,7 @@ abstract class AppDatabase : RoomDatabase() {
                     puntoRetiroNombre = "Tienda Matriz OYL Frutos Secos"
                 )
             )
+
             db.pedidoDao().insertarTodos(pedidos)
         }
     }

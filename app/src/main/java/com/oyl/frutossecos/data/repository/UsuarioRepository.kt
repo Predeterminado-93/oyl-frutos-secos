@@ -124,8 +124,9 @@ class UsuarioRepository(private val usuarioDao: UsuarioDao) {
 
         // Limpiar sesiones activas anteriores para no mezclar datos de clientes
         usuarioDao.cerrarTodasLasSesiones()
-        val nuevoId = usuarioDao.insertar(nuevoCliente).toInt()
-        val clienteCreado = nuevoCliente.copy(id = nuevoId)
+        val nuevoId = usuarioDao.insertar(nuevoCliente.copy(sesionActiva = false)).toInt()
+        usuarioDao.activarSesion(nuevoId)
+        val clienteCreado = nuevoCliente.copy(id = nuevoId, sesionActiva = true)
 
         return Result.success(clienteCreado)
     }

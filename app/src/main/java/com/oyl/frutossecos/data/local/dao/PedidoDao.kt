@@ -22,6 +22,9 @@ interface PedidoDao {
     @Query("SELECT * FROM pedidos WHERE estado = 'PENDIENTE' ORDER BY fecha DESC")
     fun pedidosPendientes(): Flow<List<PedidoEntity>>
 
+    @Query("UPDATE pedidos SET estado = :nuevoEstado WHERE id = :pedidoId")
+    suspend fun actualizarEstado(pedidoId: Int, nuevoEstado: String): Int
+
     @Query("SELECT COUNT(*) FROM pedidos")
     suspend fun contar(): Int
 }
