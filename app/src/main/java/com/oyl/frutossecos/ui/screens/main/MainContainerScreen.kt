@@ -1,3 +1,4 @@
+
 package com.OYL.frutossecos.ui.screens.main
 
 import androidx.compose.animation.*
@@ -15,14 +16,8 @@ import com.OYL.frutossecos.ui.screens.mapa.MapaScreen
 import com.OYL.frutossecos.ui.theme.*
 import kotlinx.coroutines.launch
 
-/**
+/*
  * Contenedor principal con Barra de Navegación Inferior (Bottom Navigation Bar).
- *
- *   1. Inicio (Dashboard según rol)
- *   2. Mapa (Mapa de Tiendas y Puntos de Retiro)
- *   3. Escanear -> abre la pantalla del Escáner QR (pantalla 8)
- *   4. Pedidos (reservado para desarrollo)
- *   5. Perfil (reservado para desarrollo)
  *
  * Los callbacks onIrA... los resuelve el AppNavGraph, porque Catálogo, Carrito y Escáner
  * son pantallas completas fuera de este contenedor.
@@ -32,9 +27,11 @@ fun MainContainerScreen(
     onCerrarSesion: () -> Unit,
     onIrACatalogo: () -> Unit = {},
     onIrACarrito: () -> Unit = {},
-    onIrAEscaner: () -> Unit = {}
+    onIrAEscaner: () -> Unit = {},
+    onIrAGestionProductos: () -> Unit = {},
+    onIrAGestionInventario: () -> Unit = {}
 ) {
-    var pestañaSeleccionada by remember { mutableIntStateOf(0) } // 0: Inicio, 1: Mapa
+    var pestañaSeleccionada by remember { mutableIntStateOf(0) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -45,7 +42,6 @@ fun MainContainerScreen(
                 containerColor = Color.White,
                 tonalElevation = 8.dp
             ) {
-                // 1. Inicio
                 NavigationBarItem(
                     selected = pestañaSeleccionada == 0,
                     onClick = { pestañaSeleccionada = 0 },
@@ -70,7 +66,6 @@ fun MainContainerScreen(
                     )
                 )
 
-                // 2. Mapa
                 NavigationBarItem(
                     selected = pestañaSeleccionada == 1,
                     onClick = { pestañaSeleccionada = 1 },
@@ -95,7 +90,6 @@ fun MainContainerScreen(
                     )
                 )
 
-                // 3. Escanear  (ahora abre la pantalla del Escáner QR)
                 NavigationBarItem(
                     selected = false,
                     onClick = onIrAEscaner,
@@ -112,7 +106,6 @@ fun MainContainerScreen(
                     )
                 )
 
-                // 4. Pedidos
                 NavigationBarItem(
                     selected = false,
                     onClick = {
@@ -133,7 +126,6 @@ fun MainContainerScreen(
                     )
                 )
 
-                // 5. Perfil
                 NavigationBarItem(
                     selected = false,
                     onClick = {
@@ -168,7 +160,9 @@ fun MainContainerScreen(
                         onNavegarAMapa = { pestañaSeleccionada = 1 },
                         onCerrarSesion = onCerrarSesion,
                         onIrACatalogo = onIrACatalogo,
-                        onIrACarrito = onIrACarrito
+                        onIrACarrito = onIrACarrito,
+                        onIrAGestionProductos = onIrAGestionProductos,
+                        onIrAGestionInventario = onIrAGestionInventario
                     )
                 }
                 1 -> {

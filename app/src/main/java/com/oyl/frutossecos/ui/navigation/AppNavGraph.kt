@@ -27,6 +27,9 @@ import com.OYL.frutossecos.ui.screens.main.MainContainerScreen
 import com.OYL.frutossecos.ui.screens.mapa.MapaScreen
 import com.OYL.frutossecos.ui.screens.registro.RegistroScreen
 import com.OYL.frutossecos.ui.screens.splash.SplashScreen
+import com.OYL.frutossecos.ui.screens.gestionproductos.GestionProductosScreen
+import com.OYL.frutossecos.ui.screens.gestioninventario.GestionInventarioScreen
+
 
 /**
  * Grafo de navegación principal de la aplicación OYL Frutos Secos.
@@ -107,7 +110,11 @@ fun AppNavGraph(navController: NavHostController) {
                 },
                 onIrACatalogo = { navController.navigate(NavRoutes.Catalogo.route) },
                 onIrACarrito = { navController.navigate(NavRoutes.Carrito.route) },
-                onIrAEscaner = { navController.navigate(NavRoutes.EscanearQR.route) }
+                onIrAEscaner = { navController.navigate(NavRoutes.EscanearQR.route) },
+                onIrAGestionProductos = {navController.navigate(NavRoutes.GestionProductos.route) },
+                onIrAGestionInventario = {
+                    navController.navigate(NavRoutes.AlertasStock.route)
+                }
             )
         }
 
@@ -188,14 +195,28 @@ fun AppNavGraph(navController: NavHostController) {
         composable(NavRoutes.MisPedidos.route) {
             PantallaEnConstruccion(titulo = "Mis Pedidos", onVolver = { navController.popBackStack() })
         }
+        composable(NavRoutes.GestionProductos.route) {
+            GestionProductosScreen(
+                onVolver = { navController.popBackStack() }
+            )
+        }
+
         composable(
             route = NavRoutes.EditarProducto.route,
             arguments = listOf(navArgument("productoId") { type = NavType.IntType })
         ) {
-            PantallaEnConstruccion(titulo = "Editar Producto", onVolver = { navController.popBackStack() })
+            PantallaEnConstruccion(
+                titulo = "Editar Producto",
+                onVolver = { navController.popBackStack() }
+            )
         }
         composable(NavRoutes.AdminPanel.route) {
             PantallaEnConstruccion(titulo = "Panel de Administración", onVolver = { navController.popBackStack() })
+        }
+        composable(NavRoutes.AlertasStock.route) {
+            GestionInventarioScreen(
+                onVolver = { navController.popBackStack() }
+            )
         }
     }
 }
