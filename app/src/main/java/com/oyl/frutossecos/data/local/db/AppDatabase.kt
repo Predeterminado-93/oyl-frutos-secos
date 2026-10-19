@@ -97,6 +97,19 @@ abstract class AppDatabase : RoomDatabase() {
                 )
             }
 
+            val clienteExistente = db.usuarioDao().obtenerPorAlias("cliente")
+            val clienteId = clienteExistente?.id ?: db.usuarioDao().insertar(
+                UsuarioEntity(
+                    nombre = "Cliente Demo",
+                    alias = "cliente",
+                    email = "cliente@demo.cl",
+                    password = "cliente123",
+                    telefono = "+56 9 9876 5432",
+                    direccion = "Providencia, Santiago",
+                    rol = "CLIENTE"
+                )
+            ).toInt()
+
             if (db.productoDao().contar() == 0) {
                 seedProductos(db)
             }
@@ -106,7 +119,7 @@ abstract class AppDatabase : RoomDatabase() {
             }
 
             if (db.pedidoDao().contar() == 0) {
-                seedPedidos(db)
+                seedPedidos(db, clienteId)
             }
         }
 
@@ -261,7 +274,7 @@ abstract class AppDatabase : RoomDatabase() {
             db.puntoRetiroDao().insertarTodos(puntos)
         }
 
-        private suspend fun seedPedidos(db: AppDatabase, clienteId: Int = 2) {
+        private suspend fun seedPedidos(db: AppDatabase, clienteId: Int) {
             val pedidos = listOf(
                 PedidoEntity(
                     usuarioId = clienteId,
@@ -280,15 +293,6 @@ abstract class AppDatabase : RoomDatabase() {
                     total = 1850.0,
                     itemsResumen = "Mix de semillas (500g), Mango deshidratado (200g)",
                     puntoRetiroNombre = "Punto Retiro Metro Los Leones"
-                ),
-                PedidoEntity(
-                    usuarioId = 3,
-                    usuarioAlias = "maria_l",
-                    fecha = System.currentTimeMillis() - 3600000L * 5,
-                    estado = "PENDIENTE",
-                    total = 2200.0,
-                    itemsResumen = "Pistachos tostados (500g)",
-                    puntoRetiroNombre = "Punto Retiro Santiago Centro"
                 ),
                 PedidoEntity(
                     usuarioId = clienteId,

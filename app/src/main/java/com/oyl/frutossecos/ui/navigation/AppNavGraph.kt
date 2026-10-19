@@ -1,3 +1,4 @@
+
 package com.OYL.frutossecos.ui.navigation
 
 import androidx.compose.foundation.layout.Arrangement
@@ -29,7 +30,7 @@ import com.OYL.frutossecos.ui.screens.registro.RegistroScreen
 import com.OYL.frutossecos.ui.screens.splash.SplashScreen
 import com.OYL.frutossecos.ui.screens.gestionproductos.GestionProductosScreen
 import com.OYL.frutossecos.ui.screens.gestioninventario.GestionInventarioScreen
-
+import com.OYL.frutossecos.ui.screens.pedidos.PedidosScreen
 
 /**
  * Grafo de navegación principal de la aplicación OYL Frutos Secos.
@@ -111,7 +112,9 @@ fun AppNavGraph(navController: NavHostController) {
                 onIrACatalogo = { navController.navigate(NavRoutes.Catalogo.route) },
                 onIrACarrito = { navController.navigate(NavRoutes.Carrito.route) },
                 onIrAEscaner = { navController.navigate(NavRoutes.EscanearQR.route) },
-                onIrAGestionProductos = {navController.navigate(NavRoutes.GestionProductos.route) },
+                onIrAGestionProductos = {
+                    navController.navigate(NavRoutes.GestionProductos.route)
+                },
                 onIrAGestionInventario = {
                     navController.navigate(NavRoutes.AlertasStock.route)
                 }
@@ -135,7 +138,9 @@ fun AppNavGraph(navController: NavHostController) {
                 onEditarProducto = { productoId ->
                     navController.navigate(NavRoutes.EditarProducto.createRoute(productoId))
                 },
-                onIrAlCarrito = { navController.navigate(NavRoutes.Carrito.route) }
+                onIrAlCarrito = {
+                    navController.navigate(NavRoutes.Carrito.route)
+                }
             )
         }
 
@@ -151,7 +156,9 @@ fun AppNavGraph(navController: NavHostController) {
                 onEditar = { id ->
                     navController.navigate(NavRoutes.EditarProducto.createRoute(id))
                 },
-                onIrAlCarrito = { navController.navigate(NavRoutes.Carrito.route) }
+                onIrAlCarrito = {
+                    navController.navigate(NavRoutes.Carrito.route)
+                }
             )
         }
 
@@ -169,8 +176,12 @@ fun AppNavGraph(navController: NavHostController) {
         composable(NavRoutes.Carrito.route) {
             CarritoScreen(
                 onVolver = { navController.popBackStack() },
-                onContinuarCompra = { navController.navigate(NavRoutes.ConfirmarPedido.route) },
-                onVerCatalogo = { navController.navigate(NavRoutes.Catalogo.route) }
+                onContinuarCompra = {
+                    navController.navigate(NavRoutes.ConfirmarPedido.route)
+                },
+                onVerCatalogo = {
+                    navController.navigate(NavRoutes.Catalogo.route)
+                }
             )
         }
 
@@ -191,10 +202,13 @@ fun AppNavGraph(navController: NavHostController) {
             )
         }
 
-        // ── Rutas de respaldo (pantallas todavía no desarrolladas) ─────────
+        // ── Pantalla 11: Historial y Gestión de Pedidos ────────────────────
         composable(NavRoutes.MisPedidos.route) {
-            PantallaEnConstruccion(titulo = "Mis Pedidos", onVolver = { navController.popBackStack() })
+            PedidosScreen(
+                onVolver = { navController.popBackStack() }
+            )
         }
+
         composable(NavRoutes.GestionProductos.route) {
             GestionProductosScreen(
                 onVolver = { navController.popBackStack() }
@@ -210,9 +224,14 @@ fun AppNavGraph(navController: NavHostController) {
                 onVolver = { navController.popBackStack() }
             )
         }
+
         composable(NavRoutes.AdminPanel.route) {
-            PantallaEnConstruccion(titulo = "Panel de Administración", onVolver = { navController.popBackStack() })
+            PantallaEnConstruccion(
+                titulo = "Panel de Administración",
+                onVolver = { navController.popBackStack() }
+            )
         }
+
         composable(NavRoutes.AlertasStock.route) {
             GestionInventarioScreen(
                 onVolver = { navController.popBackStack() }
