@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.room.withTransaction
 import com.OYL.frutossecos.data.local.db.AppDatabase
 import com.OYL.frutossecos.data.local.entities.MovimientoInventarioEntity
+import com.OYL.frutossecos.data.local.entities.NotificacionEntity
 import com.OYL.frutossecos.data.local.entities.ProductoEntity
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -33,6 +34,8 @@ class GestionInventarioViewModel(application: Application) :
     private val db = AppDatabase.getDatabase(application)
     private val productoDao = db.productoDao()
     private val movimientoDao = db.movimientoInventarioDao()
+    private val notificacionDao = db.notificacionDao()
+    private val usuarioDao = db.usuarioDao()
 
     private val _uiState = MutableStateFlow(GestionInventarioUiState())
     val uiState: StateFlow<GestionInventarioUiState> = _uiState.asStateFlow()
@@ -99,24 +102,10 @@ class GestionInventarioViewModel(application: Application) :
             return
         }
 
-        val nuevoStock = if (estado.tipoMovimiento == "ENTRADA") {
-            producto.stock.toLong() + cantidad
-        } else {
-            producto.stock.toLong() - cantidad
-        }
-
-        if (nuevoStock < 0) {
-            _uiState.update { it.copy(error = "No hay stock suficiente para esa salida.") }
-            return
-        }
-
-        if (nuevoStock > Int.MAX_VALUE) {
-            _uiState.update { it.copy(error = "La cantidad excede el límite permitido.") }
-            return
-        }
-
         viewModelScope.launch {
-            _uiState.update { it.copy(guardando = true, error = null, mensaje = null) }
+            _uiState.update {
+                it.copy(guardando = true, error = null, mensaje = null)
+            }
 
             try {
                 db.withTransaction {
@@ -138,10 +127,9 @@ class GestionInventarioViewModel(application: Application) :
                         throw IllegalStateException("La cantidad excede el límite permitido.")
                     }
 
-                    productoDao.actualizarStock(
-                        productoActual.id,
-                        stockActualizado.toInt()
-                    )
+                    val stockNuevo = stockActualizado.toInt()
+
+                    productoDao.actualizarStock(productoActual.id, stockNuevo)
 
                     movimientoDao.insertar(
                         MovimientoInventarioEntity(
@@ -150,10 +138,31 @@ class GestionInventarioViewModel(application: Application) :
                             tipo = estado.tipoMovimiento,
                             cantidad = cantidad,
                             stockAnterior = stockAnterior,
-                            stockNuevo = stockActualizado.toInt(),
+                            stockNuevo = stockNuevo,
                             observacion = estado.observacion.trim()
                         )
                     )
+
+                    if (
+                        stockAnterior > productoActual.stockMinimo &&
+                        stockNuevo <= productoActual.stockMinimo
+                    ) {
+                        val administrador = usuarioDao.obtenerPorAlias("admin")
+
+                        if (administrador != null) {
+                            notificacionDao.insertar(
+                                NotificacionEntity(
+                                    usuarioId = administrador.id,
+                                    titulo = "Stock bajo",
+                                    mensaje = "El producto ${productoActual.nombre} tiene $stockNuevo unidades. El mínimo configurado es ${productoActual.stockMinimo}.",
+                                    tipo = "STOCK",
+                                    fecha = System.currentTimeMillis(),
+                                    leida = false,
+                                    rutaDestino = "gestion_inventario"
+                                )
+                            )
+                        }
+                    }
                 }
 
                 _uiState.update {

@@ -33,4 +33,5 @@ sealed class NavRoutes(val route: String) {
     }
     data object GestionPedidos : NavRoutes("admin_pedidos")
     data object AlertasStock : NavRoutes("admin_alertas")
+
 }

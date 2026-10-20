@@ -22,6 +22,7 @@ data class GestionProductosUiState(
     val fotoUrl: String = "",
     val precio: String = "",
     val stock: String = "",
+    val stockMinimo: String = "5",
     val categoria: String = "Frutos secos",
     val peso: String = "250 gramos",
     val origen: String = "Nacional",
@@ -69,6 +70,7 @@ class GestionProductosViewModel(application: Application) : AndroidViewModel(app
                 fotoUrl = producto.fotoUrl,
                 precio = producto.precio.toString(),
                 stock = producto.stock.toString(),
+                stockMinimo = producto.stockMinimo.toString(),
                 categoria = producto.categoria,
                 peso = producto.peso,
                 origen = producto.origen,
@@ -83,6 +85,11 @@ class GestionProductosViewModel(application: Application) : AndroidViewModel(app
     fun cambiarFotoUrl(valor: String) = _uiState.update { it.copy(fotoUrl = valor) }
     fun cambiarPrecio(valor: String) = _uiState.update { it.copy(precio = valor, error = null) }
     fun cambiarStock(valor: String) = _uiState.update { it.copy(stock = valor, error = null) }
+    fun cambiarStockMinimo(valor: String) {
+        if (valor.isEmpty() || valor.all { it.isDigit() }) {
+            _uiState.update { it.copy(stockMinimo = valor, error = null) }
+        }
+    }
     fun cambiarCategoria(valor: String) = _uiState.update { it.copy(categoria = valor) }
     fun cambiarPeso(valor: String) = _uiState.update { it.copy(peso = valor) }
     fun cambiarOrigen(valor: String) = _uiState.update { it.copy(origen = valor) }
@@ -103,6 +110,7 @@ class GestionProductosViewModel(application: Application) : AndroidViewModel(app
         val descripcion = estado.descripcion.trim()
         val precio = estado.precio.replace(",", ".").toDoubleOrNull()
         val stock = estado.stock.toIntOrNull()
+        val stockMinimo = estado.stockMinimo.toIntOrNull()
 
         if (nombre.isBlank() || descripcion.isBlank()) {
             _uiState.update { it.copy(error = "Completa el nombre y la descripción.") }
@@ -119,6 +127,11 @@ class GestionProductosViewModel(application: Application) : AndroidViewModel(app
             return
         }
 
+        if (stockMinimo == null || stockMinimo < 0) {
+            _uiState.update { it.copy(error = "El stock mínimo debe ser un número igual o mayor que cero.") }
+            return
+        }
+
         if (estado.categoria.isBlank() || estado.peso.isBlank()) {
             _uiState.update { it.copy(error = "Completa la categoría y la presentación.") }
             return
@@ -126,7 +139,6 @@ class GestionProductosViewModel(application: Application) : AndroidViewModel(app
 
         viewModelScope.launch {
             _uiState.update { it.copy(guardando = true, error = null) }
-
             try {
                 val productoAnterior = estado.productoEditando
 
@@ -141,7 +153,8 @@ class GestionProductosViewModel(application: Application) : AndroidViewModel(app
                     peso = estado.peso.trim(),
                     origen = estado.origen.trim(),
                     activo = estado.activo,
-                    actualizadoEn = System.currentTimeMillis()
+                    actualizadoEn = System.currentTimeMillis(),
+                    stockMinimo = stockMinimo
                 )
 
                 if (productoAnterior == null) {

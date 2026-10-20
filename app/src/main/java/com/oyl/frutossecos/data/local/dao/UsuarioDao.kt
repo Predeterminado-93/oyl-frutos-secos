@@ -1,3 +1,4 @@
+
 package com.OYL.frutossecos.data.local.dao
 
 import androidx.room.*
@@ -9,6 +10,9 @@ interface UsuarioDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertar(usuario: UsuarioEntity): Long
+
+    @Update
+    suspend fun actualizar(usuario: UsuarioEntity)
 
     @Query("SELECT * FROM usuarios WHERE LOWER(alias) = LOWER(:alias) LIMIT 1")
     suspend fun obtenerPorAlias(alias: String): UsuarioEntity?
