@@ -32,19 +32,14 @@ import com.OYL.frutossecos.ui.screens.gestionproductos.GestionProductosScreen
 import com.OYL.frutossecos.ui.screens.gestioninventario.GestionInventarioScreen
 import com.OYL.frutossecos.ui.screens.pedidos.PedidosScreen
 import com.OYL.frutossecos.ui.screens.notificaciones.NotificacionesScreen
+import com.OYL.frutossecos.ui.screens.perfil.PerfilScreen
 
-/**
- * Grafo de navegación principal de la aplicación OYL Frutos Secos.
- * Conecta Splash, Login, Registro, el Contenedor Principal (Dashboard + Mapa con barra inferior)
- * y el flujo de compra: Catálogo → Detalle → Carrito → Confirmación, más el Escáner QR.
- */
 @Composable
 fun AppNavGraph(navController: NavHostController) {
     NavHost(
         navController = navController,
         startDestination = NavRoutes.Splash.route
     ) {
-        // ── Pantalla 1: Splash / Landing ───────────────────────────────────
         composable(NavRoutes.Splash.route) {
             SplashScreen(
                 onComenzar = {
@@ -64,11 +59,9 @@ fun AppNavGraph(navController: NavHostController) {
             )
         }
 
-        // ── Pantalla 2: Login ──────────────────────────────────────────────
         composable(NavRoutes.Login.route) {
             LoginScreen(
                 onLoginExitoso = { _ ->
-                    // Redirige al Dashboard / Contenedor principal con la barra inferior
                     navController.navigate(NavRoutes.Dashboard.route) {
                         popUpTo(NavRoutes.Login.route) { inclusive = true }
                     }
@@ -82,11 +75,9 @@ fun AppNavGraph(navController: NavHostController) {
             )
         }
 
-        // ── Pantalla 3: Registro de Cliente ────────────────────────────────
         composable(NavRoutes.Registro.route) {
             RegistroScreen(
                 onRegistroExitoso = { _ ->
-                    // Redirige al Dashboard / Contenedor principal con la barra inferior
                     navController.navigate(NavRoutes.Dashboard.route) {
                         popUpTo(NavRoutes.Login.route) { inclusive = true }
                     }
@@ -102,7 +93,6 @@ fun AppNavGraph(navController: NavHostController) {
             )
         }
 
-        // ── Pantalla 4: Contenedor Principal (Dashboard + Menú Inferior) ───
         composable(NavRoutes.Dashboard.route) {
             MainContainerScreen(
                 onCerrarSesion = {
@@ -110,9 +100,15 @@ fun AppNavGraph(navController: NavHostController) {
                         popUpTo(NavRoutes.Dashboard.route) { inclusive = true }
                     }
                 },
-                onIrACatalogo = { navController.navigate(NavRoutes.Catalogo.route) },
-                onIrACarrito = { navController.navigate(NavRoutes.Carrito.route) },
-                onIrAEscaner = { navController.navigate(NavRoutes.EscanearQR.route) },
+                onIrACatalogo = {
+                    navController.navigate(NavRoutes.Catalogo.route)
+                },
+                onIrACarrito = {
+                    navController.navigate(NavRoutes.Carrito.route)
+                },
+                onIrAEscaner = {
+                    navController.navigate(NavRoutes.EscanearQR.route)
+                },
                 onIrAGestionProductos = {
                     navController.navigate(NavRoutes.GestionProductos.route)
                 },
@@ -124,26 +120,31 @@ fun AppNavGraph(navController: NavHostController) {
                 },
                 onIrANotificaciones = {
                     navController.navigate(NavRoutes.Notificaciones.route)
+                },
+                onIrAPerfil = {
+                    navController.navigate(NavRoutes.Perfil.route)
                 }
             )
         }
 
-        // ── Pantalla 5: Mapa de Tiendas y Puntos de Retiro ─────────────────
         composable(NavRoutes.Mapa.route) {
             MapaScreen(
                 onVolver = { navController.popBackStack() }
             )
         }
 
-        // ── Pantalla 6: Catálogo de Productos ──────────────────────────────
         composable(NavRoutes.Catalogo.route) {
             CatalogoScreen(
                 onVolver = { navController.popBackStack() },
                 onVerDetalle = { productoId ->
-                    navController.navigate(NavRoutes.DetalleProducto.createRoute(productoId))
+                    navController.navigate(
+                        NavRoutes.DetalleProducto.createRoute(productoId)
+                    )
                 },
                 onEditarProducto = { productoId ->
-                    navController.navigate(NavRoutes.EditarProducto.createRoute(productoId))
+                    navController.navigate(
+                        NavRoutes.EditarProducto.createRoute(productoId)
+                    )
                 },
                 onIrAlCarrito = {
                     navController.navigate(NavRoutes.Carrito.route)
@@ -151,17 +152,21 @@ fun AppNavGraph(navController: NavHostController) {
             )
         }
 
-        // ── Pantalla 7: Detalle del Producto ───────────────────────────────
         composable(
             route = NavRoutes.DetalleProducto.route,
-            arguments = listOf(navArgument("productoId") { type = NavType.IntType })
+            arguments = listOf(
+                navArgument("productoId") { type = NavType.IntType }
+            )
         ) { backStackEntry ->
             val productoId = backStackEntry.arguments?.getInt("productoId") ?: 0
+
             DetalleScreen(
                 productoId = productoId,
                 onVolver = { navController.popBackStack() },
                 onEditar = { id ->
-                    navController.navigate(NavRoutes.EditarProducto.createRoute(id))
+                    navController.navigate(
+                        NavRoutes.EditarProducto.createRoute(id)
+                    )
                 },
                 onIrAlCarrito = {
                     navController.navigate(NavRoutes.Carrito.route)
@@ -169,17 +174,17 @@ fun AppNavGraph(navController: NavHostController) {
             )
         }
 
-        // ── Pantalla 8: Escáner QR de Productos ────────────────────────────
         composable(NavRoutes.EscanearQR.route) {
             EscanerQrScreen(
                 onVolver = { navController.popBackStack() },
                 onVerProducto = { productoId ->
-                    navController.navigate(NavRoutes.DetalleProducto.createRoute(productoId))
+                    navController.navigate(
+                        NavRoutes.DetalleProducto.createRoute(productoId)
+                    )
                 }
             )
         }
 
-        // ── Pantalla 9: Carrito de Compras ─────────────────────────────────
         composable(NavRoutes.Carrito.route) {
             CarritoScreen(
                 onVolver = { navController.popBackStack() },
@@ -192,7 +197,6 @@ fun AppNavGraph(navController: NavHostController) {
             )
         }
 
-        // ── Pantalla 10: Confirmación del Pedido ───────────────────────────
         composable(NavRoutes.ConfirmarPedido.route) {
             ConfirmacionScreen(
                 onVolver = { navController.popBackStack() },
@@ -209,7 +213,6 @@ fun AppNavGraph(navController: NavHostController) {
             )
         }
 
-        // ── Pantalla 11: Historial y Gestión de Pedidos ────────────────────
         composable(NavRoutes.MisPedidos.route) {
             PedidosScreen(
                 onVolver = { navController.popBackStack() }
@@ -224,7 +227,9 @@ fun AppNavGraph(navController: NavHostController) {
 
         composable(
             route = NavRoutes.EditarProducto.route,
-            arguments = listOf(navArgument("productoId") { type = NavType.IntType })
+            arguments = listOf(
+                navArgument("productoId") { type = NavType.IntType }
+            )
         ) {
             PantallaEnConstruccion(
                 titulo = "Editar Producto",
@@ -244,6 +249,7 @@ fun AppNavGraph(navController: NavHostController) {
                 onVolver = { navController.popBackStack() }
             )
         }
+
         composable(NavRoutes.Notificaciones.route) {
             NotificacionesScreen(
                 onAbrirDestino = { destino ->
@@ -259,11 +265,27 @@ fun AppNavGraph(navController: NavHostController) {
                 }
             )
         }
+
+        composable(NavRoutes.Perfil.route) {
+            PerfilScreen(
+                onVolver = {
+                    navController.popBackStack()
+                },
+                onCerrarSesion = {
+                    navController.navigate(NavRoutes.Login.route) {
+                        popUpTo(NavRoutes.Dashboard.route) { inclusive = true }
+                    }
+                }
+            )
+        }
     }
 }
 
 @Composable
-private fun PantallaEnConstruccion(titulo: String, onVolver: () -> Unit) {
+private fun PantallaEnConstruccion(
+    titulo: String,
+    onVolver: () -> Unit
+) {
     Box(
         modifier = Modifier
             .fillMaxSize()

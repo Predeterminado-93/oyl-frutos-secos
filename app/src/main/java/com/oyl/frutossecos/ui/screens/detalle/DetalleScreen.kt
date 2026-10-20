@@ -132,7 +132,8 @@ private fun ContenidoDetalle(
 ) {
     val (textoStock, colorStock) = when {
         producto.stock <= 0 -> "Sin stock" to ErrorRed
-        producto.stock <= 5 -> "Stock bajo: ${producto.stock} un." to AmberGold
+        producto.stock <= producto.stockMinimo ->
+            "Stock bajo: ${producto.stock} un." to AmberGold
         else -> "En stock (${producto.stock} un.)" to OliveGreen
     }
 

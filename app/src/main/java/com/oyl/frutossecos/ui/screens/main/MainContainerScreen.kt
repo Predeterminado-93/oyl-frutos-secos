@@ -17,6 +17,7 @@ import com.OYL.frutossecos.ui.theme.*
 @Composable
 fun MainContainerScreen(
     onCerrarSesion: () -> Unit,
+    onIrAPerfil: () -> Unit = {},
     onIrACatalogo: () -> Unit = {},
     onIrACarrito: () -> Unit = {},
     onIrAEscaner: () -> Unit = {},
@@ -131,7 +132,7 @@ fun MainContainerScreen(
 
                 NavigationBarItem(
                     selected = false,
-                    onClick = onCerrarSesion,
+                    onClick = onIrAPerfil,
                     icon = {
                         Icon(
                             imageVector = Icons.Default.Person,

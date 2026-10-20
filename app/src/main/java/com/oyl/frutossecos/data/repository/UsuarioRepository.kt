@@ -1,20 +1,12 @@
+
 package com.OYL.frutossecos.data.repository
 
 import com.OYL.frutossecos.data.local.dao.UsuarioDao
 import com.OYL.frutossecos.data.local.entities.UsuarioEntity
 import kotlinx.coroutines.flow.Flow
 
-/**
- * Repositorio de Usuarios y Autenticación.
- * Maneja la lógica de inicio de sesión, registro de clientes y persistencia de sesión.
- */
 class UsuarioRepository(private val usuarioDao: UsuarioDao) {
 
-    /**
-     * Valida credenciales contra SQLite/Room.
-     * Comprueba existencia de alias, correspondencia de contraseña y rol seleccionado.
-     * Si todo es correcto, activa la sesión local.
-     */
     suspend fun login(
         alias: String,
         password: String,
@@ -43,7 +35,6 @@ class UsuarioRepository(private val usuarioDao: UsuarioDao) {
             return Result.failure(IllegalArgumentException(mensajeRol))
         }
 
-        // Credenciales válidas: actualizar sesión en SQLite
         usuarioDao.cerrarTodasLasSesiones()
         usuarioDao.activarSesion(usuario.id)
 
@@ -51,10 +42,6 @@ class UsuarioRepository(private val usuarioDao: UsuarioDao) {
         return Result.success(usuarioConSesion)
     }
 
-    /**
-     * Registra un nuevo cliente validando campos obligatorios y duplicados.
-     * Solo permite rol "CLIENTE".
-     */
     suspend fun registrarCliente(
         nombre: String,
         alias: String,
@@ -70,7 +57,6 @@ class UsuarioRepository(private val usuarioDao: UsuarioDao) {
         val cleanTelefono = telefono.trim()
         val cleanDireccion = direccion.trim()
 
-        // Validaciones de campos obligatorios
         if (cleanNombre.isBlank()) {
             return Result.failure(IllegalArgumentException("El nombre completo es obligatorio."))
         }
@@ -99,13 +85,11 @@ class UsuarioRepository(private val usuarioDao: UsuarioDao) {
             return Result.failure(IllegalArgumentException("La dirección de entrega es obligatoria."))
         }
 
-        // Comprobar que no exista duplicidad de alias
         val aliasExistente = usuarioDao.obtenerPorAlias(cleanAlias)
         if (aliasExistente != null) {
             return Result.failure(IllegalArgumentException("El alias '$cleanAlias' ya se encuentra en uso. Elige otro."))
         }
 
-        // Comprobar que no exista duplicidad de email
         val emailExistente = usuarioDao.obtenerPorEmail(cleanEmail)
         if (emailExistente != null) {
             return Result.failure(IllegalArgumentException("El correo '$cleanEmail' ya está registrado."))
@@ -122,7 +106,6 @@ class UsuarioRepository(private val usuarioDao: UsuarioDao) {
             sesionActiva = true
         )
 
-        // Limpiar sesiones activas anteriores para no mezclar datos de clientes
         usuarioDao.cerrarTodasLasSesiones()
         val nuevoId = usuarioDao.insertar(nuevoCliente.copy(sesionActiva = false)).toInt()
         usuarioDao.activarSesion(nuevoId)
@@ -131,19 +114,55 @@ class UsuarioRepository(private val usuarioDao: UsuarioDao) {
         return Result.success(clienteCreado)
     }
 
-    /**
-     * Obtiene el flujo del usuario que tiene la sesión activa actualmente.
-     */
+    suspend fun actualizarPerfil(
+        usuarioId: Int,
+        nombre: String,
+        email: String,
+        telefono: String,
+        direccion: String
+    ): Result<UsuarioEntity> {
+        val cleanNombre = nombre.trim()
+        val cleanEmail = email.trim()
+        val cleanTelefono = telefono.trim()
+        val cleanDireccion = direccion.trim()
+
+        if (cleanNombre.isBlank()) {
+            return Result.failure(IllegalArgumentException("El nombre completo es obligatorio."))
+        }
+        if (cleanEmail.isBlank() || !cleanEmail.contains("@") || !cleanEmail.contains(".")) {
+            return Result.failure(IllegalArgumentException("Ingresa un correo electrónico válido."))
+        }
+        if (cleanTelefono.isBlank()) {
+            return Result.failure(IllegalArgumentException("El teléfono de contacto es obligatorio."))
+        }
+        if (cleanDireccion.isBlank()) {
+            return Result.failure(IllegalArgumentException("La dirección es obligatoria."))
+        }
+
+        val usuarioActual = usuarioDao.obtenerPorId(usuarioId)
+            ?: return Result.failure(IllegalArgumentException("No se encontró el usuario."))
+
+        val emailExistente = usuarioDao.obtenerPorEmail(cleanEmail)
+        if (emailExistente != null && emailExistente.id != usuarioId) {
+            return Result.failure(IllegalArgumentException("El correo '$cleanEmail' ya está registrado."))
+        }
+
+        val usuarioActualizado = usuarioActual.copy(
+            nombre = cleanNombre,
+            email = cleanEmail,
+            telefono = cleanTelefono,
+            direccion = cleanDireccion
+        )
+
+        usuarioDao.actualizar(usuarioActualizado)
+
+        return Result.success(usuarioActualizado)
+    }
+
     fun obtenerUsuarioActivoFlow(): Flow<UsuarioEntity?> = usuarioDao.usuarioActivo()
 
-    /**
-     * Obtiene directamente el usuario activo.
-     */
     suspend fun obtenerUsuarioActivo(): UsuarioEntity? = usuarioDao.obtenerUsuarioActivo()
 
-    /**
-     * Cierra todas las sesiones activas en SQLite.
-     */
     suspend fun cerrarSesion() {
         usuarioDao.cerrarTodasLasSesiones()
     }
