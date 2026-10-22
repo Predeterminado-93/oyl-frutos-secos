@@ -26,7 +26,8 @@ FUNCIONES PRINCIPALES
 - Configuracion de stock minimo y alertas de stock bajo.
 - Notificaciones locales.
 - Mapa de tiendas o puntos de retiro.
-- Escaner de codigos QR mediante la camara.
+- Escaner de codigos QR mediante la camara (admite formato estandar OYL-PROD-<id>, ID numerico directo y objetos JSON como {"id": 1}, {"productoId": 1} o {"codigo": "..."}).
+- Navegacion con Jetpack Compose y gestion del boton atras (BackHandler para retornar a Inicio desde otras pestanas y control seguro del back stack en Splash, Login y Registro).
 - Perfil de usuario y cierre de sesion.
 
 TECNOLOGIAS
@@ -60,6 +61,9 @@ NOTAS
 -----
 - Algunas funciones utilizan datos almacenados localmente en el dispositivo.
 - Para probar la camara y el escaner QR, se deben aceptar los permisos solicitados.
+  Los codigos QR compatibles pueden ser:
+  * Formato texto o numerico: "1" o "OYL-PROD-1"
+  * Formato JSON: `{"id": 1}`, `{"productoId": 1}` o `{"codigo": "OYL-PROD-1"}`
 - El inventario y los pedidos de esta version corresponden al estado implementado en el
   proyecto academico; no se debe asumir que existe un backend remoto conectado.
 - Usar datos de prueba y no ingresar contrasenas personales.

@@ -106,6 +106,27 @@ class EscanerQrViewModel(application: Application) : AndroidViewModel(applicatio
 
     private fun extraerId(texto: String): Int? {
         val limpio = texto.trim()
+
+        // 1. Soporte para JSON en el código QR (ej: {"id": 1} o {"productoId": 1} o {"codigo": "OYL-PROD-1"})
+        if (limpio.startsWith("{") && limpio.endsWith("}")) {
+            try {
+                val json = org.json.JSONObject(limpio)
+                if (json.has("id")) {
+                    return json.optInt("id")
+                }
+                if (json.has("productoId")) {
+                    return json.optInt("productoId")
+                }
+                if (json.has("codigo")) {
+                    val cod = json.optString("codigo")
+                    return extraerId(cod)
+                }
+            } catch (_: Exception) {
+                // Si falla el parsing JSON, continúa con los formatos tradicionales
+            }
+        }
+
+        // 2. Prefijo estándar "OYL-PROD-<id>" o solo el número
         val numero = if (limpio.startsWith(PREFIJO_QR, ignoreCase = true)) {
             limpio.substring(PREFIJO_QR.length)
         } else {
