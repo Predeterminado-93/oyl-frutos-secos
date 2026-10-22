@@ -46,9 +46,7 @@ fun AppNavGraph(navController: NavHostController) {
                     navController.navigate(NavRoutes.Registro.route)
                 },
                 onYaTengoCuenta = {
-                    navController.navigate(NavRoutes.Login.route) {
-                        popUpTo(NavRoutes.Splash.route) { inclusive = true }
-                    }
+                    navController.navigate(NavRoutes.Login.route)
                 },
                 onVerCatalogo = {
                     navController.navigate(NavRoutes.Dashboard.route)
@@ -70,7 +68,9 @@ fun AppNavGraph(navController: NavHostController) {
                     navController.navigate(NavRoutes.Registro.route)
                 },
                 onVolver = {
-                    navController.popBackStack()
+                    if (!navController.popBackStack()) {
+                        navController.navigate(NavRoutes.Splash.route)
+                    }
                 }
             )
         }
@@ -79,16 +79,16 @@ fun AppNavGraph(navController: NavHostController) {
             RegistroScreen(
                 onRegistroExitoso = { _ ->
                     navController.navigate(NavRoutes.Dashboard.route) {
-                        popUpTo(NavRoutes.Login.route) { inclusive = true }
-                    }
-                },
-                onIrALogin = {
-                    navController.navigate(NavRoutes.Login.route) {
                         popUpTo(NavRoutes.Registro.route) { inclusive = true }
                     }
                 },
+                onIrALogin = {
+                    navController.navigate(NavRoutes.Login.route)
+                },
                 onVolver = {
-                    navController.popBackStack()
+                    if (!navController.popBackStack()) {
+                        navController.navigate(NavRoutes.Splash.route)
+                    }
                 }
             )
         }

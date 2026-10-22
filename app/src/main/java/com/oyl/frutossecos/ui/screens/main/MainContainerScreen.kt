@@ -1,6 +1,6 @@
-
 package com.OYL.frutossecos.ui.screens.main
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -27,6 +27,11 @@ fun MainContainerScreen(
     onIrANotificaciones: () -> Unit = {}
 ) {
     var pestañaSeleccionada by remember { mutableIntStateOf(0) }
+
+    // Si el usuario está en el Mapa u otra pestaña y presiona Atrás en el teléfono, vuelve a Inicio
+    BackHandler(enabled = pestañaSeleccionada != 0) {
+        pestañaSeleccionada = 0
+    }
 
     Scaffold(
         bottomBar = {
