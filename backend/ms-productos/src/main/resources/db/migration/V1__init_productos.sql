@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS categorias (
+    id BIGSERIAL PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL UNIQUE,
+    descripcion VARCHAR(255),
+    activo BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS productos (
+    id BIGSERIAL PRIMARY KEY,
+    nombre VARCHAR(150) NOT NULL,
+    descripcion TEXT,
+    precio NUMERIC(12, 2) NOT NULL,
+    stock INTEGER NOT NULL DEFAULT 0,
+    imagen_url VARCHAR(500),
+    categoria_id BIGINT REFERENCES categorias(id),
+    activo BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_productos_categoria ON productos(categoria_id);
+CREATE INDEX IF NOT EXISTS idx_productos_nombre ON productos(nombre);

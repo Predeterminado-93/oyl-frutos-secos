@@ -13,3 +13,13 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Archivos de firma APK y almacenes de claves (Seguridad)
+*.jks
+*.keystore
+keystore.properties
+
+# Archivos de entorno y credenciales de backend
+.env
+backend/.env
+
