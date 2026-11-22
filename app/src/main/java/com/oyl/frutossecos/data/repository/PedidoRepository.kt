@@ -1,12 +1,15 @@
 
 package com.OYL.frutossecos.data.repository
 
+import android.util.Log
 import androidx.room.withTransaction
 import com.OYL.frutossecos.data.local.db.AppDatabase
 import com.OYL.frutossecos.data.local.entities.CarritoItemEntity
 import com.OYL.frutossecos.data.local.entities.PedidoEntity
-import com.OYL.frutossecos.data.local.entities.ProductoEntity
 import com.OYL.frutossecos.data.local.entities.UsuarioEntity
+import com.OYL.frutossecos.data.remote.ApiClient
+import com.OYL.frutossecos.data.remote.dto.RemoteDetalleVentaRequest
+import com.OYL.frutossecos.data.remote.dto.RemoteVentaRequest
 
 const val METODO_RETIRO = "Retiro en tienda"
 const val METODO_DESPACHO = "Despacho a domicilio"
@@ -25,8 +28,8 @@ data class PedidoConfirmacionResultado(
 
 /**
  * Repositorio de pedidos.
- * Confirma un pedido en UNA transacción de Room: valida stock, descuenta stock,
- * crea el pedido y vacía el carrito. Si algo falla, no se guarda nada (evita sobreventas).
+ * Confirma un pedido en UNA transacción de Room (valida stock, descuenta, crea pedido,
+ * vacía carrito). Además intenta registrar la venta en el backend Spring Boot.
  */
 class PedidoRepository(private val db: AppDatabase) {
 
@@ -51,12 +54,9 @@ class PedidoRepository(private val db: AppDatabase) {
 
                 for (item in items) {
                     val producto = productoDao.obtenerPorId(item.productoId)
+                        ?: throw PedidoInvalidoException("${item.productoNombre} ya no está disponible. Quítalo del carrito.")
 
-                    if (producto == null || !producto.activo) {
-                        throw PedidoInvalidoException(
-                            "${item.productoNombre} ya no está disponible. Quítalo del carrito."
-                        )
-                    }
+                    if (!producto.activo) throw PedidoInvalidoException("${item.productoNombre} ya no está disponible.")
 
                     if (producto.stock < item.cantidad) {
                         throw PedidoInvalidoException(
@@ -65,39 +65,27 @@ class PedidoRepository(private val db: AppDatabase) {
                     }
 
                     val stockNuevo = producto.stock - item.cantidad
-
-                    if (
-                        producto.stock > producto.stockMinimo &&
-                        stockNuevo <= producto.stockMinimo
-                    ) {
+                    if (producto.stock > producto.stockMinimo && stockNuevo <= producto.stockMinimo) {
                         productosConStockBajo.add(
-                            ProductoConStockBajo(
-                                nombre = producto.nombre,
-                                stockNuevo = stockNuevo,
-                                stockMinimo = producto.stockMinimo
-                            )
+                            ProductoConStockBajo(producto.nombre, stockNuevo, producto.stockMinimo)
                         )
                     }
 
-                    // Se usa el precio actual del producto (fuente oficial), no el guardado en el carrito.
                     subtotal += producto.precio * item.cantidad
                     productoDao.actualizarStock(producto.id, stockNuevo)
                 }
 
-                val despacho = if (metodoEntrega == METODO_DESPACHO) {
-                    COSTO_DESPACHO
-                } else {
-                    0.0
-                }
+                val despacho = if (metodoEntrega == METODO_DESPACHO) COSTO_DESPACHO else 0.0
+
+                // Mapea método de entrega al enum del backend
+                val metodoPagoBackend = if (metodoEntrega == METODO_DESPACHO) "TRANSFERENCIA" else "EFECTIVO"
 
                 val nuevo = PedidoEntity(
                     usuarioId = usuario.id,
                     usuarioAlias = usuario.alias,
                     estado = "PENDIENTE",
                     total = subtotal + despacho,
-                    itemsResumen = items.joinToString(", ") {
-                        "${it.cantidad}x ${it.productoNombre}"
-                    },
+                    itemsResumen = items.joinToString(", ") { "${it.cantidad}x ${it.productoNombre}" },
                     puntoRetiroNombre = destino,
                     metodoEntrega = metodoEntrega,
                     telefonoContacto = telefono
@@ -105,6 +93,31 @@ class PedidoRepository(private val db: AppDatabase) {
 
                 val idGenerado = db.pedidoDao().insertar(nuevo).toInt()
                 db.carritoDao().vaciarCarrito(usuario.id)
+
+                // --- Envío al backend (best-effort: no falla si no hay conexión) ---
+                try {
+                    val request = RemoteVentaRequest(
+                        usuarioId = usuario.id.toLong(),
+                        metodoPago = metodoPagoBackend,
+                        direccionEntrega = destino,
+                        detalles = items.map { item ->
+                            RemoteDetalleVentaRequest(
+                                productoId = item.productoId.toLong(),
+                                nombreProducto = item.productoNombre,
+                                precioUnitario = item.productoPrecio,
+                                cantidad = item.cantidad
+                            )
+                        }
+                    )
+                    val response = ApiClient.orderService.crearVenta(request)
+                    if (response.isSuccessful) {
+                        Log.i("PedidoRepository", "Venta registrada en backend: id=${response.body()?.id}")
+                    } else {
+                        Log.w("PedidoRepository", "Backend rechazó la venta (${response.code()}). Guardado solo en Room.")
+                    }
+                } catch (e: Exception) {
+                    Log.w("PedidoRepository", "Sin conexión al backend, pedido guardado solo en Room: ${e.message}")
+                }
 
                 PedidoConfirmacionResultado(
                     pedido = nuevo.copy(id = idGenerado),
@@ -116,9 +129,7 @@ class PedidoRepository(private val db: AppDatabase) {
         } catch (e: PedidoInvalidoException) {
             Result.failure(e)
         } catch (e: Exception) {
-            Result.failure(
-                Exception("No se pudo confirmar el pedido. Inténtalo nuevamente.")
-            )
+            Result.failure(Exception("No se pudo confirmar el pedido. Inténtalo nuevamente."))
         }
     }
 }

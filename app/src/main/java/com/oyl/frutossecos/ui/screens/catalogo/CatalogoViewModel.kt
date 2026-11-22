@@ -1,20 +1,19 @@
 package com.OYL.frutossecos.ui.screens.catalogo
 
-
-
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.OYL.frutossecos.data.local.db.AppDatabase
 import com.OYL.frutossecos.data.local.entities.ProductoEntity
 import com.OYL.frutossecos.data.repository.CarritoRepository
+import com.OYL.frutossecos.data.repository.ProductoRepository
 import com.OYL.frutossecos.data.repository.UsuarioRepository
 import com.OYL.frutossecos.ui.util.AvisoUi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 
 data class CatalogoUiState(
     val productos: List<ProductoEntity> = emptyList(),
@@ -30,13 +29,14 @@ class CatalogoViewModel(application: Application) : AndroidViewModel(application
     private val db = AppDatabase.getDatabase(application)
     private val usuarioRepository = UsuarioRepository(db.usuarioDao())
     private val carritoRepository = CarritoRepository(db.carritoDao(), db.productoDao())
+    private val productoRepository = ProductoRepository(db.productoDao())
 
     private val _uiState = MutableStateFlow(CatalogoUiState())
     val uiState: StateFlow<CatalogoUiState> = _uiState.asStateFlow()
 
     init {
         cargarUsuario()
-        cargarProductos()
+        sincronizarYMostrar()
     }
 
     private fun cargarUsuario() {
@@ -47,11 +47,24 @@ class CatalogoViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    private fun cargarProductos() {
+    /** Primero sincroniza desde el backend (sin bloquear la UI) y luego
+     *  observa Room — así el catálogo se actualiza en tiempo real. */
+    private fun sincronizarYMostrar() {
         viewModelScope.launch {
-            db.productoDao().todosActivos().collect { lista ->
+            // Sincronización en background (no bloquea la colección del Flow)
+            productoRepository.sincronizarDesdeBackend()
+        }
+        viewModelScope.launch {
+            productoRepository.todosActivos().collect { lista ->
                 _uiState.update { it.copy(productos = lista, isLoading = false) }
             }
+        }
+    }
+
+    fun refrescar() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            productoRepository.sincronizarDesdeBackend()
         }
     }
 
