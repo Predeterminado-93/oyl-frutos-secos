@@ -20,10 +20,17 @@ data class RegistroUiState(
     val email: String = "",
     val telefono: String = "",
     val direccion: String = "",
+    val errorNombre: String? = null,
+    val errorAlias: String? = null,
+    val errorPassword: String? = null,
+    val errorConfirmPassword: String? = null,
+    val errorEmail: String? = null,
+    val errorTelefono: String? = null,
+    val errorDireccion: String? = null,
+    val errorMessage: String? = null,
     val passwordVisible: Boolean = false,
     val confirmPasswordVisible: Boolean = false,
     val isLoading: Boolean = false,
-    val errorMessage: String? = null,
     val registroExitoso: Boolean = false
 )
 
@@ -38,13 +45,13 @@ class RegistroViewModel(application: Application) : AndroidViewModel(application
         repository = UsuarioRepository(database.usuarioDao())
     }
 
-    fun onNombreChanged(v: String) = _uiState.update { it.copy(nombre = v, errorMessage = null) }
-    fun onAliasChanged(v: String) = _uiState.update { it.copy(alias = v, errorMessage = null) }
-    fun onPasswordChanged(v: String) = _uiState.update { it.copy(password = v, errorMessage = null) }
-    fun onConfirmPasswordChanged(v: String) = _uiState.update { it.copy(confirmPassword = v, errorMessage = null) }
-    fun onEmailChanged(v: String) = _uiState.update { it.copy(email = v, errorMessage = null) }
-    fun onTelefonoChanged(v: String) = _uiState.update { it.copy(telefono = v, errorMessage = null) }
-    fun onDireccionChanged(v: String) = _uiState.update { it.copy(direccion = v, errorMessage = null) }
+    fun onNombreChanged(v: String) = _uiState.update { it.copy(nombre = v, errorNombre = null) }
+    fun onAliasChanged(v: String) = _uiState.update { it.copy(alias = v, errorAlias = null) }
+    fun onPasswordChanged(v: String) = _uiState.update { it.copy(password = v, errorPassword = null, errorConfirmPassword = null) }
+    fun onConfirmPasswordChanged(v: String) = _uiState.update { it.copy(confirmPassword = v, errorConfirmPassword = null) }
+    fun onEmailChanged(v: String) = _uiState.update { it.copy(email = v, errorEmail = null) }
+    fun onTelefonoChanged(v: String) = _uiState.update { it.copy(telefono = v, errorTelefono = null) }
+    fun onDireccionChanged(v: String) = _uiState.update { it.copy(direccion = v, errorDireccion = null) }
 
     fun togglePasswordVisibility() = _uiState.update { it.copy(passwordVisible = !it.passwordVisible) }
     fun toggleConfirmPasswordVisibility() = _uiState.update { it.copy(confirmPasswordVisible = !it.confirmPasswordVisible) }
@@ -52,21 +59,108 @@ class RegistroViewModel(application: Application) : AndroidViewModel(application
     fun registrar(onSuccess: (UsuarioEntity) -> Unit) {
         val state = _uiState.value
 
-        if (state.password != state.confirmPassword) {
-            _uiState.update { it.copy(errorMessage = "Las contraseñas no coinciden.") }
+        var hayErrores = false
+        var errNombre: String? = null
+        var errAlias: String? = null
+        var errPassword: String? = null
+        var errConfirmPassword: String? = null
+        var errEmail: String? = null
+        var errTelefono: String? = null
+        var errDireccion: String? = null
+
+        val cleanNombre = state.nombre.trim()
+        val cleanAlias = state.alias.trim()
+        val cleanPassword = state.password.trim()
+        val cleanConfirmPassword = state.confirmPassword.trim()
+        val cleanEmail = state.email.trim()
+        val cleanTelefono = state.telefono.trim()
+        val cleanDireccion = state.direccion.trim()
+
+        if (cleanNombre.isBlank()) {
+            errNombre = "El nombre completo es obligatorio."
+            hayErrores = true
+        }
+
+        if (cleanAlias.isBlank()) {
+            errAlias = "El alias de usuario es obligatorio."
+            hayErrores = true
+        } else if (cleanAlias.length < 3) {
+            errAlias = "El alias debe tener al menos 3 caracteres."
+            hayErrores = true
+        }
+
+        if (cleanPassword.isBlank()) {
+            errPassword = "La contraseña es obligatoria."
+            hayErrores = true
+        } else if (cleanPassword.length < 4) {
+            errPassword = "La contraseña debe tener al menos 4 caracteres."
+            hayErrores = true
+        }
+
+        if (cleanConfirmPassword.isBlank()) {
+            errConfirmPassword = "Debes confirmar tu contraseña."
+            hayErrores = true
+        } else if (cleanPassword != cleanConfirmPassword) {
+            errConfirmPassword = "Las contraseñas no coinciden."
+            hayErrores = true
+        }
+
+        if (cleanEmail.isBlank()) {
+            errEmail = "El correo electrónico es obligatorio."
+            hayErrores = true
+        } else if (!cleanEmail.contains("@") || !cleanEmail.contains(".")) {
+            errEmail = "Ingresa un correo electrónico válido."
+            hayErrores = true
+        }
+
+        if (cleanTelefono.isBlank()) {
+            errTelefono = "El teléfono de contacto es obligatorio."
+            hayErrores = true
+        }
+
+        if (cleanDireccion.isBlank()) {
+            errDireccion = "La dirección de entrega es obligatoria."
+            hayErrores = true
+        }
+
+        if (hayErrores) {
+            _uiState.update {
+                it.copy(
+                    errorNombre = errNombre,
+                    errorAlias = errAlias,
+                    errorPassword = errPassword,
+                    errorConfirmPassword = errConfirmPassword,
+                    errorEmail = errEmail,
+                    errorTelefono = errTelefono,
+                    errorDireccion = errDireccion,
+                    errorMessage = null
+                )
+            }
             return
         }
 
-        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+        _uiState.update {
+            it.copy(
+                isLoading = true,
+                errorNombre = null,
+                errorAlias = null,
+                errorPassword = null,
+                errorConfirmPassword = null,
+                errorEmail = null,
+                errorTelefono = null,
+                errorDireccion = null,
+                errorMessage = null
+            )
+        }
 
         viewModelScope.launch {
             val result = repository.registrarCliente(
-                nombre = state.nombre,
-                alias = state.alias,
-                password = state.password,
-                email = state.email,
-                telefono = state.telefono,
-                direccion = state.direccion
+                nombre = cleanNombre,
+                alias = cleanAlias,
+                password = cleanPassword,
+                email = cleanEmail,
+                telefono = cleanTelefono,
+                direccion = cleanDireccion
             )
 
             result.fold(
@@ -75,11 +169,18 @@ class RegistroViewModel(application: Application) : AndroidViewModel(application
                     onSuccess(nuevoCliente)
                 },
                 onFailure = { error ->
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            errorMessage = error.message ?: "Error al registrar cliente."
-                        )
+                    val msg = error.message ?: "Error al registrar cliente."
+                    val lower = msg.lowercase()
+                    _uiState.update { current ->
+                        when {
+                            lower.contains("alias") -> current.copy(isLoading = false, errorAlias = msg)
+                            lower.contains("correo") || lower.contains("email") -> current.copy(isLoading = false, errorEmail = msg)
+                            lower.contains("nombre") -> current.copy(isLoading = false, errorNombre = msg)
+                            lower.contains("contraseña") || lower.contains("password") -> current.copy(isLoading = false, errorPassword = msg)
+                            lower.contains("teléfono") || lower.contains("telefono") -> current.copy(isLoading = false, errorTelefono = msg)
+                            lower.contains("dirección") || lower.contains("direccion") -> current.copy(isLoading = false, errorDireccion = msg)
+                            else -> current.copy(isLoading = false, errorMessage = msg)
+                        }
                     }
                 }
             )
@@ -87,6 +188,17 @@ class RegistroViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun limpiarError() {
-        _uiState.update { it.copy(errorMessage = null) }
+        _uiState.update {
+            it.copy(
+                errorMessage = null,
+                errorNombre = null,
+                errorAlias = null,
+                errorPassword = null,
+                errorConfirmPassword = null,
+                errorEmail = null,
+                errorTelefono = null,
+                errorDireccion = null
+            )
+        }
     }
 }

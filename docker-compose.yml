@@ -1,0 +1,131 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: oyl-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - oyl-network
+
+  eureka-server:
+    build:
+      context: ./backend/eureka-server
+    container_name: oyl-eureka-server
+    restart: always
+    ports:
+      - "8761:8761"
+    environment:
+      - SERVER_PORT=8761
+      - EUREKA_INSTANCE_HOSTNAME=eureka-server
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8761/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - oyl-network
+
+  ms-usuarios:
+    build:
+      context: ./backend/ms-usuarios
+    container_name: oyl-ms-usuarios
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      - SERVER_PORT=8081
+      - EUREKA_URI=http://eureka-server:8761/eureka/
+      - DB_URL=jdbc:postgresql://postgres:5432/oyl_usuarios
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - oyl-network
+
+  ms-productos:
+    build:
+      context: ./backend/ms-productos
+    container_name: oyl-ms-productos
+    restart: always
+    ports:
+      - "8082:8082"
+    environment:
+      - SERVER_PORT=8082
+      - EUREKA_URI=http://eureka-server:8761/eureka/
+      - DB_URL=jdbc:postgresql://postgres:5432/oyl_productos
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - oyl-network
+
+  ms-ventas:
+    build:
+      context: ./backend/ms-ventas
+    container_name: oyl-ms-ventas
+    restart: always
+    ports:
+      - "8083:8083"
+    environment:
+      - SERVER_PORT=8083
+      - EUREKA_URI=http://eureka-server:8761/eureka/
+      - DB_URL=jdbc:postgresql://postgres:5432/oyl_ventas
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - oyl-network
+
+  api-gateway:
+    build:
+      context: ./backend/api-gateway
+    container_name: oyl-api-gateway
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      - SERVER_PORT=8080
+      - EUREKA_URI=http://eureka-server:8761/eureka/
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      ms-usuarios:
+        condition: service_started
+      ms-productos:
+        condition: service_started
+      ms-ventas:
+        condition: service_started
+    networks:
+      - oyl-network
+
+volumes:
+  postgres_data:
+
+networks:
+  oyl-network:
+    driver: bridge

@@ -124,54 +124,6 @@ fun RegistroScreen(
 
             Spacer(Modifier.height(20.dp))
 
-            // ── Mensaje de Error (si existe) ───────────────────────────────
-            AnimatedVisibility(
-                visible = uiState.errorMessage != null,
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically()
-            ) {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 16.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = ErrorRed.copy(alpha = 0.12f)
-                    ),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, ErrorRed.copy(alpha = 0.4f))
-                ) {
-                    Row(
-                        modifier = Modifier.padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.ErrorOutline,
-                            contentDescription = null,
-                            tint = ErrorRed,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(Modifier.width(10.dp))
-                        Text(
-                            text = uiState.errorMessage ?: "",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = ErrorRed,
-                            modifier = Modifier.weight(1f)
-                        )
-                        IconButton(
-                            onClick = { viewModel.limpiarError() },
-                            modifier = Modifier.size(20.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Cerrar",
-                                tint = ErrorRed,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-                }
-            }
-
             // ── SECCIÓN 1: Credenciales de Cuenta ──────────────────────────
             Text(
                 text = "Datos de Acceso",
@@ -189,6 +141,12 @@ fun RegistroScreen(
                 onValueChange = { viewModel.onNombreChanged(it) },
                 label = { Text("Nombre completo *") },
                 placeholder = { Text("Ej: Juan Pérez") },
+                isError = uiState.errorNombre != null,
+                supportingText = {
+                    uiState.errorNombre?.let {
+                        Text(text = it, color = ErrorRed, fontSize = 12.sp)
+                    }
+                },
                 leadingIcon = {
                     Icon(imageVector = Icons.Default.Badge, contentDescription = null, tint = BrownMedium)
                 },
@@ -199,7 +157,7 @@ fun RegistroScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(8.dp))
 
             // Alias
             OutlinedTextField(
@@ -207,6 +165,12 @@ fun RegistroScreen(
                 onValueChange = { viewModel.onAliasChanged(it) },
                 label = { Text("Alias o Nombre de usuario *") },
                 placeholder = { Text("Ej: juanito (mínimo 3 caracteres)") },
+                isError = uiState.errorAlias != null,
+                supportingText = {
+                    uiState.errorAlias?.let {
+                        Text(text = it, color = ErrorRed, fontSize = 12.sp)
+                    }
+                },
                 leadingIcon = {
                     Icon(imageVector = Icons.Default.AccountCircle, contentDescription = null, tint = BrownMedium)
                 },
@@ -217,7 +181,7 @@ fun RegistroScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(8.dp))
 
             // Contraseña
             OutlinedTextField(
@@ -225,6 +189,12 @@ fun RegistroScreen(
                 onValueChange = { viewModel.onPasswordChanged(it) },
                 label = { Text("Contraseña *") },
                 placeholder = { Text("Mínimo 4 caracteres") },
+                isError = uiState.errorPassword != null,
+                supportingText = {
+                    uiState.errorPassword?.let {
+                        Text(text = it, color = ErrorRed, fontSize = 12.sp)
+                    }
+                },
                 leadingIcon = {
                     Icon(imageVector = Icons.Default.Lock, contentDescription = null, tint = BrownMedium)
                 },
@@ -245,7 +215,7 @@ fun RegistroScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(8.dp))
 
             // Confirmar Contraseña
             OutlinedTextField(
@@ -253,6 +223,12 @@ fun RegistroScreen(
                 onValueChange = { viewModel.onConfirmPasswordChanged(it) },
                 label = { Text("Confirmar contraseña *") },
                 placeholder = { Text("Repite tu contraseña") },
+                isError = uiState.errorConfirmPassword != null,
+                supportingText = {
+                    uiState.errorConfirmPassword?.let {
+                        Text(text = it, color = ErrorRed, fontSize = 12.sp)
+                    }
+                },
                 leadingIcon = {
                     Icon(imageVector = Icons.Default.LockReset, contentDescription = null, tint = BrownMedium)
                 },
@@ -273,7 +249,7 @@ fun RegistroScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(16.dp))
 
             // ── SECCIÓN 2: Datos de Contacto ───────────────────────────────
             Text(
@@ -292,6 +268,12 @@ fun RegistroScreen(
                 onValueChange = { viewModel.onEmailChanged(it) },
                 label = { Text("Correo electrónico *") },
                 placeholder = { Text("ejemplo@correo.cl") },
+                isError = uiState.errorEmail != null,
+                supportingText = {
+                    uiState.errorEmail?.let {
+                        Text(text = it, color = ErrorRed, fontSize = 12.sp)
+                    }
+                },
                 leadingIcon = {
                     Icon(imageVector = Icons.Default.Email, contentDescription = null, tint = BrownMedium)
                 },
@@ -302,7 +284,7 @@ fun RegistroScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(8.dp))
 
             // Teléfono
             OutlinedTextField(
@@ -310,6 +292,12 @@ fun RegistroScreen(
                 onValueChange = { viewModel.onTelefonoChanged(it) },
                 label = { Text("Teléfono de contacto *") },
                 placeholder = { Text("+56 9 1234 5678") },
+                isError = uiState.errorTelefono != null,
+                supportingText = {
+                    uiState.errorTelefono?.let {
+                        Text(text = it, color = ErrorRed, fontSize = 12.sp)
+                    }
+                },
                 leadingIcon = {
                     Icon(imageVector = Icons.Default.Phone, contentDescription = null, tint = BrownMedium)
                 },
@@ -320,7 +308,7 @@ fun RegistroScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(8.dp))
 
             // Dirección
             OutlinedTextField(
@@ -328,6 +316,12 @@ fun RegistroScreen(
                 onValueChange = { viewModel.onDireccionChanged(it) },
                 label = { Text("Dirección de entrega *") },
                 placeholder = { Text("Calle, número, comuna o ciudad") },
+                isError = uiState.errorDireccion != null,
+                supportingText = {
+                    uiState.errorDireccion?.let {
+                        Text(text = it, color = ErrorRed, fontSize = 12.sp)
+                    }
+                },
                 leadingIcon = {
                     Icon(imageVector = Icons.Default.Home, contentDescription = null, tint = BrownMedium)
                 },
@@ -346,7 +340,17 @@ fun RegistroScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(Modifier.height(24.dp))
+            // Error general no asociado a un campo específico (si lo hubiera)
+            if (uiState.errorMessage != null) {
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    text = uiState.errorMessage ?: "",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = ErrorRed
+                )
+            }
+
+            Spacer(Modifier.height(20.dp))
 
             // ── Botón: Registrar Cliente ───────────────────────────────────
             Button(
@@ -426,5 +430,9 @@ private fun textFieldColors() = OutlinedTextFieldDefaults.colors(
     unfocusedLabelColor = BrownMedium.copy(alpha = 0.7f),
     cursorColor = AmberGold,
     focusedPlaceholderColor = BrownMedium.copy(alpha = 0.5f),
-    unfocusedPlaceholderColor = BrownMedium.copy(alpha = 0.5f)
+    unfocusedPlaceholderColor = BrownMedium.copy(alpha = 0.5f),
+    errorBorderColor = ErrorRed,
+    errorLabelColor = ErrorRed,
+    errorSupportingTextColor = ErrorRed,
+    errorCursorColor = ErrorRed
 )

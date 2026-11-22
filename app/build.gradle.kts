@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -20,8 +23,29 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    val keystorePropertiesFile = rootProject.file("keystore.properties")
+    val keystoreProperties = Properties()
+    val hasKeystore = keystorePropertiesFile.exists()
+    if (hasKeystore) {
+        keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+    }
+
+    signingConfigs {
+        create("release") {
+            if (hasKeystore) {
+                storeFile = rootProject.file(keystoreProperties.getProperty("storeFile") ?: "oyl-release-key.jks")
+                storePassword = keystoreProperties.getProperty("storePassword") ?: ""
+                keyAlias = keystoreProperties.getProperty("keyAlias") ?: ""
+                keyPassword = keystoreProperties.getProperty("keyPassword") ?: ""
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (hasKeystore) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             optimization {
                 enable = false
             }
