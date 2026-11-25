@@ -16,10 +16,11 @@ import java.util.concurrent.TimeUnit
 object ApiClient {
 
     /**
-     * IP predeterminada para el emulador Android hacia la máquina anfitriona (localhost).
-     * En dispositivo físico vía WiFi, reemplazar por la IP local de la computadora (ej. http://192.168.1.X:8080/).
+     * IP de tu PC en la red WiFi local (192.168.1.14).
+     * Esto permite que dispositivos físicos (como tu teléfono en 192.168.1.21)
+     * y también el emulador puedan conectarse directamente al API Gateway en el puerto 8080.
      */
-    private const val BASE_URL = "http://10.0.2.2:8080/"
+    private const val BASE_URL = "http://192.168.1.14:8080/"
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY

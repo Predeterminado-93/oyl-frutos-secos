@@ -2,10 +2,13 @@
 package com.OYL.frutossecos.ui.screens.gestionproductos
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.OYL.frutossecos.data.local.db.AppDatabase
 import com.OYL.frutossecos.data.local.entities.ProductoEntity
+import com.OYL.frutossecos.data.remote.ApiClient
+import com.OYL.frutossecos.data.remote.dto.RemoteProductoCreateRequest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -141,9 +144,33 @@ class GestionProductosViewModel(application: Application) : AndroidViewModel(app
             _uiState.update { it.copy(guardando = true, error = null) }
             try {
                 val productoAnterior = estado.productoEditando
+                var idGenerado = productoAnterior?.id ?: 0
+
+                // Si es un producto nuevo, intentamos crearlo en el Backend (PostgreSQL)
+                if (productoAnterior == null) {
+                    try {
+                        val req = RemoteProductoCreateRequest(
+                            nombre = nombre,
+                            descripcion = descripcion,
+                            precio = precio,
+                            stock = stock,
+                            imagenUrl = estado.fotoUrl.trim().ifBlank { null },
+                            categoriaId = 1L
+                        )
+                        val res = ApiClient.productService.crearProducto(req)
+                        if (res.isSuccessful && res.body() != null) {
+                            idGenerado = res.body()!!.id.toInt()
+                            Log.i("GestionProductos", "[OYL-PRODUCTO] Producto creado en PostgreSQL (ID: $idGenerado): '$nombre'")
+                        } else {
+                            Log.w("GestionProductos", "[OYL-PRODUCTO] Backend creación falló (${res.code()}), guardando en Room local.")
+                        }
+                    } catch (e: Exception) {
+                        Log.w("GestionProductos", "[OYL-PRODUCTO] Sin conexión al backend para crear producto: ${e.message}")
+                    }
+                }
 
                 val producto = ProductoEntity(
-                    id = productoAnterior?.id ?: 0,
+                    id = idGenerado,
                     nombre = nombre,
                     descripcion = descripcion,
                     fotoUrl = estado.fotoUrl.trim(),
@@ -158,13 +185,23 @@ class GestionProductosViewModel(application: Application) : AndroidViewModel(app
                 )
 
                 if (productoAnterior == null) {
-                    productoDao.insertar(producto)
+                    val nuevoId = productoDao.insertar(producto)
+                    val idFinal = if (idGenerado > 0) idGenerado else nuevoId.toInt()
+                    Log.i(
+                        "GestionProductos",
+                        "[OYL-PRODUCTO] NUEVO PRODUCTO CREADO (ID: $idFinal): '${producto.nombre}' | Precio: $${producto.precio} | Stock: ${producto.stock} | Categoría: ${producto.categoria} | Peso: ${producto.peso}"
+                    )
                 } else {
                     productoDao.actualizar(producto)
+                    Log.i(
+                        "GestionProductos",
+                        "[OYL-PRODUCTO] PRODUCTO MODIFICADO (ID: ${producto.id}): '${producto.nombre}' | Precio nuevo: $${producto.precio} | Stock nuevo: ${producto.stock} | Categoría: ${producto.categoria} | Activo: ${producto.activo}"
+                    )
                 }
 
                 cerrarFormulario()
             } catch (e: Exception) {
+                Log.e("GestionProductos", "[OYL-PRODUCTO] Error al guardar producto: ${e.message}", e)
                 _uiState.update {
                     it.copy(
                         guardando = false,
@@ -178,13 +215,19 @@ class GestionProductosViewModel(application: Application) : AndroidViewModel(app
     fun cambiarEstado(producto: ProductoEntity) {
         viewModelScope.launch {
             try {
+                val nuevoEstadoActivo = !producto.activo
                 productoDao.actualizar(
                     producto.copy(
-                        activo = !producto.activo,
+                        activo = nuevoEstadoActivo,
                         actualizadoEn = System.currentTimeMillis()
                     )
                 )
+                Log.i(
+                    "GestionProductos",
+                    "[OYL-PRODUCTO] ESTADO DE PRODUCTO CAMBIADO (ID: ${producto.id}): '${producto.nombre}' -> Ahora está: ${if (nuevoEstadoActivo) "ACTIVO" else "INACTIVO"}"
+                )
             } catch (e: Exception) {
+                Log.e("GestionProductos", "[OYL-PRODUCTO] Error al cambiar estado: ${e.message}", e)
                 _uiState.update {
                     it.copy(error = "No se pudo cambiar el estado del producto.")
                 }

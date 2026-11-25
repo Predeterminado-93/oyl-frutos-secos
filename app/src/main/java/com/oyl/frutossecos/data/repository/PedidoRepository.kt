@@ -94,6 +94,11 @@ class PedidoRepository(private val db: AppDatabase) {
                 val idGenerado = db.pedidoDao().insertar(nuevo).toInt()
                 db.carritoDao().vaciarCarrito(usuario.id)
 
+                Log.i(
+                    "PedidoRepository",
+                    "[OYL-COMPRA] NUEVA COMPRA REALIZADA: Pedido #$idGenerado | Cliente: '${usuario.nombre}' (${usuario.alias}) | Total: $$${nuevo.total} | Método: $metodoEntrega | Destino: '$destino' | Items (${items.size}): ${nuevo.itemsResumen}"
+                )
+
                 // --- Envío al backend (best-effort: no falla si no hay conexión) ---
                 try {
                     val request = RemoteVentaRequest(

@@ -1,6 +1,7 @@
 
 package com.OYL.frutossecos.ui.screens.perfil
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.OYL.frutossecos.data.local.db.AppDatabase
@@ -111,6 +112,10 @@ class PerfilViewModel(application: Application) : AndroidViewModel(application) 
                 direccion = estado.direccion
             ).fold(
                 onSuccess = { usuarioActualizado ->
+                    Log.i(
+                        "PerfilViewModel",
+                        "[OYL-CLIENTE] Cambios guardados con éxito en la vista para '${usuarioActualizado.nombre}' (${usuarioActualizado.email})"
+                    )
                     _uiState.update {
                         it.copy(
                             usuario = usuarioActualizado,
