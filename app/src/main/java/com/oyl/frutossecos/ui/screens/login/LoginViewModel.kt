@@ -1,6 +1,7 @@
 package com.OYL.frutossecos.ui.screens.login
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.OYL.frutossecos.data.local.db.AppDatabase
@@ -52,7 +53,7 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     fun llenarCredencialesDemoAdmin() {
         _uiState.update {
             it.copy(
-                alias = "admin",
+                alias = "admin@oyl.cl",
                 password = "admin123",
                 rol = "ADMIN",
                 errorMessage = null
@@ -63,7 +64,7 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     fun llenarCredencialesDemoCliente() {
         _uiState.update {
             it.copy(
-                alias = "cliente",
+                alias = "cliente@oyl.cl",
                 password = "cliente123",
                 rol = "CLIENTE",
                 errorMessage = null
@@ -73,6 +74,10 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
     fun iniciarSesion(onSuccess: (UsuarioEntity) -> Unit) {
         val currentState = _uiState.value
+        Log.i(
+            "LoginViewModel",
+            "[OYL-AUTH] Iniciando sesión como: ${currentState.rol} | Usuario/Email: '${currentState.alias}'"
+        )
         _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
         viewModelScope.launch {
@@ -83,10 +88,18 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
             )
             result.fold(
                 onSuccess = { usuario ->
+                    Log.i(
+                        "LoginViewModel",
+                        "[OYL-AUTH] Sesión iniciada con éxito como: ${usuario.rol} | Nombre: '${usuario.nombre}' | ID: ${usuario.id}"
+                    )
                     _uiState.update { it.copy(isLoading = false, usuarioAutenticado = usuario) }
                     onSuccess(usuario)
                 },
                 onFailure = { error ->
+                    Log.w(
+                        "LoginViewModel",
+                        "[OYL-AUTH] Fallo al iniciar sesión como: ${currentState.rol} | Motivo: ${error.message}"
+                    )
                     _uiState.update {
                         it.copy(
                             isLoading = false,

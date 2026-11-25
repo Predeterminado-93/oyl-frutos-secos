@@ -44,8 +44,10 @@ Esta guía explica en detalle cómo funciona la comunicación entre la aplicaci�
 +---------------------------------------------------------------------------------+
 ```
 
-> **¿Por qué `10.0.2.2:8080`?**  
-> En el emulador estándar de Android, `10.0.2.2` es el alias virtual para apuntar al `localhost` de tu computadora anfitriona (donde Docker expone los puertos).
+> **¿Por qué se usa `192.168.1.14:8080` en lugar de `10.0.2.2:8080`?**  
+> - `10.0.2.2` **sólo** existe dentro del emulador estándar de Android Studio como puente hacia el localhost.
+> - Si pruebas en un **teléfono físico real** (conectado por Wi-Fi), el teléfono no conoce `10.0.2.2` y da error de conexión.
+> - Usando la IP local de tu PC en la red WiFi (`192.168.1.14:8080`), la app funciona **tanto en el teléfono físico como en el emulador**.
 
 ---
 
@@ -84,25 +86,23 @@ SELECT * FROM detalle_ventas;
 
 ## 3. Formas de Ver la Interacción Frontend ↔ Backend en Tiempo Real
 
-### Forma 1: Logcat en Android Studio (Tráfico HTTP Completo)
-En la app Android, `ApiClient.kt` tiene configurado `HttpLoggingInterceptor` en nivel `BODY`. Esto significa que cada solicitud y respuesta HTTP se imprime completa en la consola.
+### Forma 1: Logcat en Android Studio (Trazabilidad y Tráfico HTTP)
+En la app Android, se configuraron logs claros con emojis y tags específicos para que puedas filtrar las acciones clave:
 
-1. Abre **Android Studio**.
-2. En la parte inferior, abre la pestaña **Logcat**.
-3. En la barra de búsqueda de Logcat, escribe el filtro:
+1. Abre **Android Studio** y la pestaña **Logcat**.
+2. **Filtro general para ver toda la actividad de OYL Frutos Secos**:
    ```text
-   tag:OkHttp
+   tag:OYL | tag:OkHttp
    ```
-4. Al interactuar con la app, verás en tiempo real:
-   - La URL solicitada (`--> POST http://10.0.2.2:8080/api/usuarios/login`)
-   - El JSON enviado (`{"email":"admin@oyl.cl","password":"..."}`)
-   - La respuesta del servidor (`<-- 200 OK`)
-   - El JSON recibido con el token y datos del usuario.
-
-> **Tip**: Si quieres ver los logs específicos de la lógica de sincronización, filtra por:
-> ```text
-> tag:UsuarioRepository | tag:ProductoRepository | tag:PedidosViewModel
-> ```
+3. **Filtros por acción específica**:
+   | Acción | Filtro en Logcat | Ejemplo de mensaje que verás |
+   |---|---|---|
+   | **Inicio de Sesión (con Rol)** | `tag:LoginViewModel` o `tag:UsuarioRepository` | `[OYL-AUTH] Iniciando sesión como: ADMIN \| Usuario/Email: 'admin@oyl.cl'`<br>`[OYL-AUTH] Sesión iniciada con éxito como: ADMIN` o `CLIENTE` |
+   | **Crear / Modificar Producto** | `tag:GestionProductos` | `[OYL-PRODUCTO] NUEVO PRODUCTO CREADO: 'Mix Almendras' \| Precio: $5990` o `[OYL-PRODUCTO] PRODUCTO MODIFICADO` |
+   | **Cambio a "En preparación"** | `tag:PedidosViewModel` | `[OYL-PEDIDO] PEDIDO #3 PASO A 'EN PREPARACION'. Taller preparando frutos secos.` |
+   | **Edición de Cliente / Perfil** | `tag:PerfilViewModel` o `tag:UsuarioRepository` | `[OYL-CLIENTE] PERFIL DE CLIENTE ACTUALIZADO: Nombre: 'Carlos' \| Email: '...'` |
+   | **Realización de una Compra** | `tag:PedidoRepository` o `tag:ConfirmacionViewModel` | `[OYL-COMPRA] NUEVA COMPRA REALIZADA: Pedido #5 \| Total: $12.980` |
+   | **Peticiones HTTP al Backend** | `tag:OkHttp` | `--> POST http://192.168.1.14:8080/api/ventas` y `<-- 200 OK` |
 
 ---
 

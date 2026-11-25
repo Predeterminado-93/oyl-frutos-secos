@@ -2,6 +2,7 @@
 package com.OYL.frutossecos.ui.screens.confirmacion
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.OYL.frutossecos.data.local.db.AppDatabase
@@ -175,6 +176,10 @@ class ConfirmacionViewModel(application: Application) : AndroidViewModel(applica
             ).fold(
                 onSuccess = { resultado ->
                     val pedido = resultado.pedido
+                    Log.i(
+                        "ConfirmacionViewModel",
+                        "[OYL-COMPRA] Pedido #${pedido.id} confirmado exitosamente en pantalla. Total: $${pedido.total} | Cliente: ${usuario.nombre} | Destino: ${pedido.puntoRetiroNombre}"
+                    )
 
                     try {
                         notificacionRepository.insertar(

@@ -132,6 +132,18 @@ class PedidosViewModel(application: Application) : AndroidViewModel(application)
                         "ENTREGADO" -> "Entregado"
                         else -> nuevoEstado
                     }
+
+                    Log.i(
+                        "PedidosViewModel",
+                        "[OYL-PEDIDO] CAMBIO DE ESTADO EN PEDIDO #$pedidoId: '${pedido.estado}' -> '$nuevoEstado' ($nombreEstado) | Cliente: ${pedido.usuarioAlias}"
+                    )
+                    if (nuevoEstado == "EN_PREPARACION") {
+                        Log.i(
+                            "PedidosViewModel",
+                            "[OYL-PEDIDO] PEDIDO #$pedidoId PASO A 'EN PREPARACION'. Taller preparando frutos secos para el cliente '${pedido.usuarioAlias}'."
+                        )
+                    }
+
                     notificacionRepository.insertar(
                         NotificacionEntity(
                             usuarioId = pedido.usuarioId,
@@ -143,6 +155,7 @@ class PedidosViewModel(application: Application) : AndroidViewModel(application)
                     )
                     _uiState.update { it.copy(guardando = false, mensaje = "Estado del pedido actualizado.") }
                 } else {
+                    Log.w("PedidosViewModel", "[OYL-PEDIDO] No se pudo actualizar el pedido #$pedidoId (filas afectadas: 0)")
                     _uiState.update { it.copy(guardando = false, error = "No se encontró el pedido seleccionado.") }
                 }
             } catch (e: Exception) {

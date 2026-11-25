@@ -251,12 +251,12 @@ fun LoginScreen(
                 }
             }
 
-            // ── Campo: Alias ───────────────────────────────────────────────
+            // ── Campo: Correo o Alias ───────────────────────────────────────────────
             OutlinedTextField(
                 value = uiState.alias,
                 onValueChange = { viewModel.onAliasChanged(it) },
-                label = { Text("Alias o Nombre de usuario") },
-                placeholder = { Text(if (uiState.rol == "ADMIN") "admin" else "Ej: juanito") },
+                label = { Text("Correo electrónico o Alias") },
+                placeholder = { Text(if (uiState.rol == "ADMIN") "admin@oyl.cl" else "cliente@oyl.cl") },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.AccountCircle,

@@ -1,9 +1,12 @@
 package com.OYL.frutossecos.data.remote.api
 
 import com.OYL.frutossecos.data.remote.dto.RemoteCategoriaResponse
+import com.OYL.frutossecos.data.remote.dto.RemoteProductoCreateRequest
 import com.OYL.frutossecos.data.remote.dto.RemoteProductoResponse
 import retrofit2.Response
+import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -11,6 +14,9 @@ interface ProductApiService {
 
     @GET("api/productos")
     suspend fun listarProductos(): Response<List<RemoteProductoResponse>>
+
+    @POST("api/productos")
+    suspend fun crearProducto(@Body request: RemoteProductoCreateRequest): Response<RemoteProductoResponse>
 
     @GET("api/productos/{id}")
     suspend fun obtenerProducto(@Path("id") id: Long): Response<RemoteProductoResponse>

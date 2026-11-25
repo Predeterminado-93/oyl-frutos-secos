@@ -26,10 +26,22 @@ class UsuarioRepository(private val usuarioDao: UsuarioDao) {
             return Result.failure(IllegalArgumentException("Por favor ingresa tu email/alias y contraseña."))
         }
 
-        // --- Intento backend (el backend usa email, el campo alias puede ser email) ---
+        // --- Intento backend (normaliza alias a email si no contiene @) ---
+        Log.i("UsuarioRepository", "[OYL-AUTH] Iniciando sesión como: $rolEsperado | Identificador: '$cleanAlias'")
+
+        val emailParaBackend = when {
+            cleanAlias.contains("@") -> cleanAlias
+            cleanAlias.equals("admin", ignoreCase = true) -> "admin@oyl.cl"
+            cleanAlias.equals("cliente", ignoreCase = true) -> "cliente@oyl.cl"
+            else -> {
+                val local = usuarioDao.obtenerPorAlias(cleanAlias)
+                local?.email ?: if (cleanAlias.isNotBlank()) "$cleanAlias@oyl.cl" else cleanAlias
+            }
+        }
+
         try {
             val response = ApiClient.authService.login(
-                RemoteLoginRequest(email = cleanAlias, password = cleanPassword)
+                RemoteLoginRequest(email = emailParaBackend, password = cleanPassword)
             )
             if (response.isSuccessful) {
                 val remoto = response.body()
@@ -70,9 +82,12 @@ class UsuarioRepository(private val usuarioDao: UsuarioDao) {
                     } else {
                         val newId = usuarioDao.insertar(entidad.copy(sesionActiva = false)).toInt()
                         usuarioDao.activarSesion(newId)
-                        return Result.success(entidad.copy(id = newId))
+                        val usuarioFinal = entidad.copy(id = newId)
+                        Log.i("UsuarioRepository", "[OYL-AUTH] Sesión iniciada con éxito vía Backend como: ${usuarioFinal.rol} | Usuario: '${usuarioFinal.nombre}' (${usuarioFinal.email})")
+                        return Result.success(usuarioFinal)
                     }
                     usuarioDao.activarSesion(entidad.id)
+                    Log.i("UsuarioRepository", "[OYL-AUTH] Sesión iniciada con éxito vía Backend como: ${entidad.rol} | Usuario: '${entidad.nombre}' (${entidad.email})")
                     return Result.success(entidad)
                 }
             }
@@ -98,6 +113,7 @@ class UsuarioRepository(private val usuarioDao: UsuarioDao) {
         }
         usuarioDao.cerrarTodasLasSesiones()
         usuarioDao.activarSesion(usuario.id)
+        Log.i("UsuarioRepository", "[OYL-AUTH] Sesión iniciada con éxito vía Room Local como: ${usuario.rol} | Usuario: '${usuario.nombre}'")
         return Result.success(usuario.copy(sesionActiva = true))
     }
 
@@ -129,12 +145,22 @@ class UsuarioRepository(private val usuarioDao: UsuarioDao) {
         if (cleanTelefono.isBlank()) return Result.failure(IllegalArgumentException("El teléfono de contacto es obligatorio."))
         if (cleanDireccion.isBlank()) return Result.failure(IllegalArgumentException("La dirección de entrega es obligatoria."))
 
-        // Separa nombre y apellido (todo lo que venga después del primer espacio es apellido)
+        // Separa nombre y apellido (todo lo que venga después del primer espacio es apellido).
+        // Si no se ingresó apellido, usamos el primer nombre como apellido para cumplir con el mínimo de 2 caracteres en el backend.
         val partes = cleanNombre.split(" ", limit = 2)
         val primerNombre = partes[0]
-        val apellido = if (partes.size > 1) partes[1] else "."
+        val apellido = if (partes.size > 1 && partes[1].trim().length >= 2) partes[1].trim() else primerNombre
 
-        // --- Intento backend ---
+        // Verificamos antes si ya existe en Room local por alias o correo para fallar rápido
+        val aliasExistente = usuarioDao.obtenerPorAlias(cleanAlias)
+        if (aliasExistente != null) return Result.failure(IllegalArgumentException("El alias '$cleanAlias' ya está en uso."))
+
+        val emailExistente = usuarioDao.obtenerPorEmail(cleanEmail)
+        if (emailExistente != null) return Result.failure(IllegalArgumentException("El correo '$cleanEmail' ya está registrado."))
+
+        var idRemoto: Int? = null
+
+        // --- Intento backend (PostgreSQL) ---
         try {
             val response = ApiClient.authService.register(
                 RemoteRegistroRequest(
@@ -147,22 +173,27 @@ class UsuarioRepository(private val usuarioDao: UsuarioDao) {
                 )
             )
             if (response.isSuccessful && response.body() != null) {
-                Log.i("UsuarioRepository", "Registro exitoso en backend.")
+                val body = response.body()!!
+                idRemoto = body.id.toInt()
+                Log.i("UsuarioRepository", "[OYL-AUTH] Registro exitoso en PostgreSQL (ID: $idRemoto) para '$cleanNombre' ($cleanEmail)")
             } else {
-                Log.w("UsuarioRepository", "Backend registro falló (${response.code()}), guardando solo en Room.")
+                val err = response.errorBody()?.string() ?: ""
+                Log.e("UsuarioRepository", "[OYL-AUTH] Backend registro falló (${response.code()}): $err")
+                if (response.code() == 409 || err.contains("registrado", ignoreCase = true) || err.contains("existe", ignoreCase = true)) {
+                    return Result.failure(IllegalArgumentException("El correo electrónico ya está registrado en la base de datos."))
+                }
+                if (response.code() == 400) {
+                    val msg = if (err.isNotBlank() && err.contains("message")) err else "Datos de registro inválidos en el servidor."
+                    return Result.failure(IllegalArgumentException(msg))
+                }
             }
         } catch (e: Exception) {
-            Log.w("UsuarioRepository", "Sin conexión para registro, guardando en Room: ${e.message}")
+            Log.w("UsuarioRepository", "[OYL-AUTH] Sin conexión al backend para registro (${e.message}), guardando en Room local.")
         }
 
-        // Siempre guarda en Room para que la sesión funcione offline
-        val aliasExistente = usuarioDao.obtenerPorAlias(cleanAlias)
-        if (aliasExistente != null) return Result.failure(IllegalArgumentException("El alias '$cleanAlias' ya está en uso."))
-
-        val emailExistente = usuarioDao.obtenerPorEmail(cleanEmail)
-        if (emailExistente != null) return Result.failure(IllegalArgumentException("El correo '$cleanEmail' ya está registrado."))
-
+        // Guarda en Room para que la sesión funcione offline y persista en la app
         val nuevoCliente = UsuarioEntity(
+            id = idRemoto ?: 0,
             nombre = cleanNombre,
             alias = cleanAlias,
             email = cleanEmail,
@@ -174,8 +205,11 @@ class UsuarioRepository(private val usuarioDao: UsuarioDao) {
         )
         usuarioDao.cerrarTodasLasSesiones()
         val nuevoId = usuarioDao.insertar(nuevoCliente.copy(sesionActiva = false)).toInt()
-        usuarioDao.activarSesion(nuevoId)
-        return Result.success(nuevoCliente.copy(id = nuevoId, sesionActiva = true))
+        val idFinal = if (idRemoto != null && idRemoto > 0) idRemoto else nuevoId
+        usuarioDao.activarSesion(idFinal)
+        val usuarioRetorno = nuevoCliente.copy(id = idFinal, sesionActiva = true)
+        Log.i("UsuarioRepository", "[OYL-AUTH] Usuario registrado y sesión iniciada: '${usuarioRetorno.nombre}' (ID: ${usuarioRetorno.id})")
+        return Result.success(usuarioRetorno)
     }
 
     suspend fun actualizarPerfil(
@@ -210,6 +244,10 @@ class UsuarioRepository(private val usuarioDao: UsuarioDao) {
             direccion = cleanDireccion
         )
         usuarioDao.actualizar(usuarioActualizado)
+        Log.i(
+            "UsuarioRepository",
+            "[OYL-CLIENTE] PERFIL DE CLIENTE ACTUALIZADO (ID: $usuarioId): Nombre: '$cleanNombre' | Email: '$cleanEmail' | Tel: '$cleanTelefono' | Dirección: '$cleanDireccion'"
+        )
         return Result.success(usuarioActualizado)
     }
 

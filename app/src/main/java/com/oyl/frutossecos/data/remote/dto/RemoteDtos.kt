@@ -54,6 +54,15 @@ data class RemoteProductoResponse(
     @SerializedName("activo") val activo: Boolean
 )
 
+data class RemoteProductoCreateRequest(
+    @SerializedName("nombre") val nombre: String,
+    @SerializedName("descripcion") val descripcion: String?,
+    @SerializedName("precio") val precio: Double,
+    @SerializedName("stock") val stock: Int,
+    @SerializedName("imagenUrl") val imagenUrl: String? = null,
+    @SerializedName("categoriaId") val categoriaId: Long = 1
+)
+
 // --- Ventas y Pedidos ---
 data class RemoteDetalleVentaRequest(
     @SerializedName("productoId") val productoId: Long,
